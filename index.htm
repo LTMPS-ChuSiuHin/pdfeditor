@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全能 PDF 與教學工具箱 (極致美學與多媒體版)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- PDF-lib for manipulation -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <!-- PDF.js for rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <!-- Fabric.js for drawing & annotations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <!-- Sortable.js for drag and drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+    <style>
+        body { 
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 50%, #f5f3ff 100%);
+        }
+        
+        /* 特效與動畫 */
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.98) translateY(6px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .view-animate {
+            animation: fadeInScale 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .tool-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tool-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px -2px rgba(59, 130, 246, 0.25);
+        }
+        .tool-btn.active { 
+            background: linear-gradient(135deg, #2563eb, #4f46e5); 
+            color: white; 
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+        }
+
+        .stamp-btn { transition: all 0.2s ease; }
+        .stamp-btn:hover { transform: scale(1.06); }
+        .stamp-btn.active { 
+            background-color: #dbeafe; 
+            border-color: #2563eb; 
+            transform: scale(1.1); 
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2); 
+        }
+
+        .page-thumbnail { 
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); 
+            cursor: grab; 
+        }
+        .page-thumbnail:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.12);
+        }
+        .page-thumbnail:active { cursor: grabbing; }
+        .hide { display: none !important; }
+        
+        /* 預覽背景樣式 */
+        .bg-checkerboard {
+            background-color: #ffffff;
+            background-image: 
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        .bg-dark-preview { background-color: #0f172a; }
+        .bg-white-preview { background-color: #ffffff; }
+        .bg-paper-preview {
+            background-color: #fefce8;
+            background-image: linear-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 100% 28px;
+        }
+
+        /* 劇院關燈模式遮罩 */
+        .cinema-dim-active {
+            background-color: #090d16 !important;
+            color: #f8fafc !important;
+        }
+
+        .cursor-eyedropper { cursor: crosshair !important; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-gray-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- 頂部導航 & 頁籤切換 -->
+    <header class="glass-header border-b border-gray-200/80 px-6 py-3 flex flex-wrap justify-between items-center z-20 relative shadow-sm gap-3">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600">
+                    全能 PDF 與教學工具箱
+                </h1>
+                <p class="text-[11px] text-gray-400 font-medium">純前端極速運算 · 隱私安全 · 專為教師設計</p>
+            </div>
+        </div>
+        
+        <!-- 四大分頁導航 -->
+        <div class="flex flex-wrap gap-1.5 bg-gray-100/90 p-1.5 rounded-xl border border-gray-200/60">
+            <button id="tabBtnOrganize" class="px-3.5 py-2 rounded-lg text-sm font-bold bg-white shadow-sm text-blue-600 transition-all flex items-center">
+                <i class="fa-solid fa-layer-group mr-1.5"></i> 頁面管理 (合併/分拆)
+            </button>
+            <button id="tabBtnAnnotate" class="px-3.5 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-white/60 transition-all flex items-center">
+                <i class="fa-solid fa-pen-nib mr-1.5 text-indigo-500"></i> 批改及簽署
+            </button>
+            <button id="tabBtnBgRemover" class="px-3.5 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-white/60 transition-all flex items-center">
+                <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-purple-600"></i> 圖片去背(BETA)
+            </button>
+            <button id="tabBtnYoutube" class="px-3.5 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-white/60 transition-all flex items-center">
+                <i class="fa-brands fa-youtube mr-1.5 text-red-600"></i> 無廣告 YouTube 播放器
+            </button>
+        </div>
+    </header>
+
+    <!-- 內容區域 -->
+    <main class="flex-1 overflow-hidden relative">
+        
+        <!-- ========================================== -->
+        <!-- 模組 1：頁面管理 (Organize - 合併/分拆/刪除/放大檢視) -->
+        <!-- ========================================== -->
+        <section id="viewOrganize" class="view-animate absolute inset-0 flex flex-col h-full">
+            <div class="px-6 py-3.5 bg-white/90 border-b flex flex-wrap justify-between items-center shadow-sm z-10 gap-2">
+                <div class="flex items-center space-x-3">
+                    <button id="btnUploadOrganize" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:opacity-95 font-bold shadow-sm transition flex items-center text-sm">
+                        <i class="fa-solid fa-plus mr-1.5"></i> 加入 PDF 檔案
+                    </button>
+                    <input type="file" id="fileOrganize" accept="application/pdf" multiple class="hidden">
+                    <span class="text-xs text-gray-500 hidden md:inline">
+                        <i class="fa-solid fa-circle-info text-blue-500 mr-1"></i>可拖曳排序，點擊縮圖下方「<i class="fa-solid fa-magnifying-glass-plus"></i>」可放大查看高畫質頁面。
+                    </span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="btnExportMerged" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-bold shadow-sm transition text-sm">
+                        <i class="fa-solid fa-object-group mr-1"></i> 合併匯出全部
+                    </button>
+                    <button id="btnOpenSplitModal" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 font-bold shadow-sm transition text-sm">
+                        <i class="fa-solid fa-scissors mr-1"></i> 分拆匯出...
+                    </button>
+                    <button id="btnClearOrganize" class="bg-red-50 text-red-600 border border-red-200 px-3.5 py-2 rounded-lg hover:bg-red-100 font-bold transition text-sm">
+                        清空
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-auto p-6" id="organizeDropZone">
+                <div id="pagesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"></div>
+                <div id="emptyOrganizeState" class="h-full flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-blue-200 bg-white/50 rounded-2xl transition-all p-12">
+                    <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-4 text-blue-500 shadow-inner">
+                        <i class="fa-solid fa-file-circle-plus text-4xl"></i>
+                    </div>
+                    <p class="text-xl font-bold text-gray-700">點擊上方按鈕或直接將 PDF 拖曳至此</p>
+                    <p class="text-sm text-gray-400 mt-1">支援多份教材合併、自訂頁碼分拆、單頁旋轉與放大檢視</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 模組 2：批改及簽署 (Annotate - 含無損放大縮小) -->
+        <!-- ========================================== -->
+        <section id="viewAnnotate" class="view-animate absolute inset-0 flex h-full hide">
+            
+            <!-- 左側工具列 -->
+            <aside class="w-28 bg-white border-r flex flex-col items-center py-3 px-2 space-y-3 shrink-0 shadow-lg z-10 overflow-y-auto">
+                
+                <!-- 顏色與粗細設定 -->
+                <div class="w-full flex flex-col items-center bg-slate-50 p-2 rounded-xl border border-slate-200/80">
+                    <div class="flex items-center space-x-2 mb-2">
+                        <input type="color" id="colorPicker" value="#ef4444" class="w-7 h-7 rounded-lg cursor-pointer border-0 p-0 shadow-sm" title="選擇顏色">
+                        <span class="text-xs font-bold text-gray-600">顏色</span>
+                    </div>
+                    <div class="w-full flex flex-col items-center">
+                        <div class="flex justify-between w-full text-[10px] text-gray-500 mb-0.5">
+                            <span>粗細</span>
+                            <span id="brushSizeVal" class="font-mono font-bold text-blue-600">3px</span>
+                        </div>
+                        <input type="range" id="brushSize" min="1" max="30" value="3" class="w-full accent-blue-600" title="筆刷與線條粗細">
+                    </div>
+                </div>
+
+                <!-- 繪圖與選取工具 -->
+                <div class="w-full">
+                    <div class="text-[10px] font-bold text-gray-400 text-center mb-1">筆刷與工具</div>
+                    <div class="grid grid-cols-2 gap-1.5 justify-items-center">
+                        <button id="btnSelect" class="tool-btn w-10 h-10 rounded-xl border hover:bg-blue-50 flex items-center justify-center" title="選擇 / 移動物件"><i class="fa-solid fa-arrow-pointer"></i></button>
+                        <button id="btnPen" class="tool-btn active w-10 h-10 rounded-xl border hover:bg-blue-50 flex items-center justify-center" title="一般畫筆"><i class="fa-solid fa-pen"></i></button>
+                        <button id="btnHighlighter" class="tool-btn w-10 h-10 rounded-xl border hover:bg-yellow-50 text-amber-500 flex items-center justify-center" title="半透明螢光筆"><i class="fa-solid fa-highlighter"></i></button>
+                        <button id="btnText" class="tool-btn w-10 h-10 rounded-xl border hover:bg-blue-50 flex items-center justify-center" title="插入文字框"><i class="fa-solid fa-font"></i></button>
+                    </div>
+                </div>
+
+                <!-- 幾何圖形工具 -->
+                <div class="w-full">
+                    <div class="text-[10px] font-bold text-gray-400 text-center mb-1">插入幾何圖形</div>
+                    <div class="grid grid-cols-2 gap-1.5 justify-items-center">
+                        <button id="btnShapeLine" class="tool-btn w-10 h-10 rounded-xl border hover:bg-blue-50 flex items-center justify-center" title="插入直線"><i class="fa-solid fa-slash"></i></button>
+                        <button id="btnShapeRect" class="tool-btn w-10 h-10 rounded-xl border hover:bg-blue-50 flex items-center justify-center" title="插入方框 (正方形/長方形)"><i class="fa-regular fa-square"></i></button>
+                        <button id="btnShapeCircle" class="tool-btn w-10 h-10 rounded-xl border hover:bg-blue-50 flex items-center justify-center" title="插入圓圈"><i class="fa-regular fa-circle"></i></button>
+                        <button id="btnShapeTriangle" class="tool-btn w-10 h-10 rounded-xl border hover:bg-blue-50 flex items-center justify-center" title="插入三角形"><i class="fa-solid fa-play -rotate-90 text-xs"></i></button>
+                    </div>
+                </div>
+
+                <!-- 圖片與印章處理 -->
+                <div class="w-full">
+                    <div class="text-[10px] font-bold text-gray-400 text-center mb-1">圖片與進階</div>
+                    <div class="grid grid-cols-2 gap-1.5 justify-items-center">
+                        <button id="btnDateStamp" class="tool-btn w-10 h-10 rounded-xl border hover:bg-blue-50 flex items-center justify-center" title="插入今日日期印"><i class="fa-solid fa-calendar-check"></i></button>
+                        <button id="btnImage" class="tool-btn w-10 h-10 rounded-xl border hover:bg-blue-50 flex items-center justify-center" title="上傳圖片 / 簽名檔"><i class="fa-solid fa-image"></i></button>
+                        <input type="file" id="imageUpload" accept="image/*" class="hidden">
+                        
+                        <button id="btnRemoveBg" class="tool-btn w-10 h-10 rounded-xl border border-purple-300 text-purple-600 hover:bg-purple-50 flex items-center justify-center" title="將選中圖片智慧去白底並自動裁邊">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </button>
+                        <button id="btnAutoCrop" class="tool-btn w-10 h-10 rounded-xl border border-teal-300 text-teal-600 hover:bg-teal-50 flex items-center justify-center" title="自動裁切選中圖片的透明空白邊緣">
+                            <i class="fa-solid fa-crop-simple"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="w-full border-gray-200">
+
+                <!-- 刪除與復原 -->
+                <div class="grid grid-cols-2 gap-1.5 justify-items-center w-full">
+                    <button id="btnDeleteObj" class="tool-btn w-10 h-10 rounded-xl border border-red-200 hover:bg-red-50 text-red-500 flex items-center justify-center" title="刪除選中物件 (Delete)"><i class="fa-solid fa-trash-can"></i></button>
+                    <button id="btnUndo" class="tool-btn w-10 h-10 rounded-xl border hover:bg-gray-100 flex items-center justify-center disabled:opacity-40" title="復原上一步 (Undo)"><i class="fa-solid fa-rotate-left"></i></button>
+                </div>
+            </aside>
+
+            <!-- 中間畫布區 -->
+            <div class="flex-1 overflow-auto p-6 flex flex-col items-center relative" id="annotateWorkspace">
+                <!-- 狀態提示橫幅 -->
+                <div id="stampModeBanner" class="hidden sticky top-0 z-30 mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2 rounded-full shadow-lg flex items-center space-x-3 text-sm font-bold animate-bounce">
+                    <span><i class="fa-solid fa-stamp mr-1"></i> 連續蓋章模式：請直接在作業上點擊蓋下「<span id="currentStampIcon">✔</span>」</span>
+                    <button id="btnExitStampMode" class="bg-white/20 hover:bg-white/30 px-2.5 py-0.5 rounded-full text-xs transition">結束模式</button>
+                </div>
+
+                <div id="uploadAreaAnnotate" class="w-full max-w-2xl mt-16 flex flex-col items-center justify-center border-2 border-dashed border-indigo-200 rounded-2xl bg-white/80 p-12 hover:border-indigo-400 hover:shadow-lg cursor-pointer transition-all duration-200">
+                    <div class="w-20 h-20 rounded-full bg-indigo-50 flex items-center justify-center mb-4 text-indigo-500">
+                        <i class="fa-solid fa-file-signature text-4xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-700">點擊或拖曳一份 PDF 至此進行批改</h2>
+                    <p class="text-gray-400 mt-2 text-sm">支援無損放大縮小檢視、快速圖章 (✔/✖)、螢光筆、幾何圖形與簽名去背</p>
+                    <input type="file" id="pdfUploadAnnotate" accept="application/pdf" class="hidden">
+                </div>
+
+                <div id="editorArea" class="hidden flex-col items-center pb-20">
+                    <div class="relative inline-block shadow-2xl rounded-sm bg-white" id="canvasWrapper">
+                        <canvas id="pdfCanvas" class="absolute top-0 left-0"></canvas>
+                        <canvas id="fabricCanvas" class="absolute top-0 left-0"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側面板 (含頁面導航、放大縮小檢視與快速圖章) -->
+            <aside id="rightPanelAnnotate" class="w-64 bg-white border-l p-4 flex flex-col hidden shadow-lg z-10 overflow-y-auto">
+                
+                <!-- 新增：畫面放大縮小控制 (Zoom Control) -->
+                <div class="mb-5">
+                    <h3 class="font-bold text-xs text-gray-500 uppercase tracking-wider mb-2"><i class="fa-solid fa-magnifying-glass mr-1 text-blue-500"></i> 畫面縮放檢視</h3>
+                    <div class="flex items-center justify-between bg-slate-100 p-1.5 rounded-xl border">
+                        <button id="btnAnnotateZoomOut" class="w-8 h-8 bg-white rounded-lg shadow-sm hover:bg-gray-50 font-bold text-gray-700 flex items-center justify-center transition" title="縮小畫面"><i class="fa-solid fa-minus text-xs"></i></button>
+                        <span id="annotateZoomVal" class="font-mono font-bold text-sm text-blue-600 cursor-pointer" title="點擊恢復 100%">100%</span>
+                        <button id="btnAnnotateZoomIn" class="w-8 h-8 bg-white rounded-lg shadow-sm hover:bg-gray-50 font-bold text-gray-700 flex items-center justify-center transition" title="放大畫面"><i class="fa-solid fa-plus text-xs"></i></button>
+                    </div>
+                </div>
+
+                <h3 class="font-bold text-xs text-gray-500 uppercase tracking-wider mb-2"><i class="fa-regular fa-file-lines mr-1 text-blue-500"></i> 頁面導航</h3>
+                <div class="flex justify-between items-center mb-5 bg-slate-100 p-1.5 rounded-xl border">
+                    <button id="prevPage" class="w-8 h-8 bg-white border rounded-lg shadow-sm hover:bg-gray-50"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                    <span class="font-bold text-sm text-gray-700"><span id="pageNum">1</span> / <span id="pageCount">?</span></span>
+                    <button id="nextPage" class="w-8 h-8 bg-white border rounded-lg shadow-sm hover:bg-gray-50"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                </div>
+
+                <!-- 快速批改圖章庫 -->
+                <div class="mb-5">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-xs text-gray-500 uppercase tracking-wider"><i class="fa-solid fa-stamp mr-1 text-red-500"></i> 快速批改圖章</h3>
+                        <span class="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-medium">點選後點畫面</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 mb-3">
+                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50 font-bold text-red-600" data-stamp="✔" data-color="#dc2626" title="答對 (紅勾)">✔</button>
+                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50 font-bold text-red-600" data-stamp="✖" data-color="#dc2626" title="答錯 (紅叉)">✖</button>
+                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50 font-bold text-orange-500" data-stamp="△" data-color="#f97316" title="部分正確 (三角)">△</button>
+                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50 font-bold text-purple-600" data-stamp="❓" data-color="#9333ea" title="疑問 / 不清楚">❓</button>
+                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50" data-stamp="⭐" data-color="#eab308" title="星星獎勵">⭐</button>
+                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50" data-stamp="💯" data-color="#dc2626" title="一百分">💯</button>
+                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50" data-stamp="👍" data-color="#2563eb" title="讚！">👍</button>
+                        <button class="stamp-btn border rounded-xl p-2 text-xs flex items-center justify-center hover:bg-gray-50 font-bold text-blue-600" data-stamp="閱" data-color="#2563eb" data-box="true" title="「閱」字方章">閱</button>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-gray-500 bg-slate-50 p-2 rounded-lg border">
+                        <span>圖章大小：</span>
+                        <input type="range" id="stampSize" min="20" max="80" value="42" class="w-28 accent-blue-600">
+                    </div>
+                </div>
+
+                <div class="mt-auto space-y-2 pt-3 border-t">
+                    <button id="btnExportAnnotated" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:opacity-95 shadow-md flex items-center justify-center transition">
+                        <i class="fa-solid fa-download mr-2"></i> 匯出批改檔案
+                    </button>
+                    <button id="btnCloseAnnotate" class="w-full py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition text-xs font-bold">
+                        關閉並重新上傳
+                    </button>
+                </div>
+            </aside>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 模組 3：圖片去背(BETA) - 含像素級放大檢視    -->
+        <!-- ========================================== -->
+        <section id="viewBgRemover" class="view-animate absolute inset-0 flex h-full hide">
+            
+            <!-- 左側控制面板 -->
+            <aside class="w-80 bg-white border-r p-5 flex flex-col shadow-lg z-10 overflow-y-auto">
+                <h2 class="text-lg font-bold text-purple-700 mb-3 flex items-center border-b pb-2">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> 圖片去背(BETA)
+                </h2>
+
+                <!-- 1. 去背模式選擇 -->
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">1. 去背範圍模式</label>
+                    <div class="grid grid-cols-2 gap-1.5 bg-gray-100 p-1 rounded-xl">
+                        <button id="btnModeGlobal" class="py-1.5 px-2 bg-white shadow text-purple-700 rounded-lg text-xs font-bold transition" title="連字跡孔洞內的背景一併去除，最適合簽名與印章">
+                            <i class="fa-solid fa-signature mr-1"></i>簽名/印章(全局)
+                        </button>
+                        <button id="btnModeFlood" class="py-1.5 px-2 text-gray-600 hover:bg-gray-200 rounded-lg text-xs font-bold transition" title="只去除外圍相連背景，保護圖案內部的白色(如眼白、文字)">
+                            <i class="fa-solid fa-shield-halved mr-1"></i>貼紙(保護內部)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. 目標顏色選擇 -->
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">2. 鎖定要去除的背景色</label>
+                    <div class="flex space-x-2">
+                        <button id="btnTargetWhite" class="flex-1 py-1.5 px-2 bg-purple-100 text-purple-700 border border-purple-300 rounded-lg font-semibold text-xs flex items-center justify-center">
+                            <span class="w-3.5 h-3.5 rounded-full bg-white border border-gray-400 mr-1.5"></span> 預設白底
+                        </button>
+                        <button id="btnEyedropper" class="flex-1 py-1.5 px-2 bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 rounded-lg font-semibold text-xs flex items-center justify-center transition">
+                            <i class="fa-solid fa-eye-dropper mr-1.5"></i> 滴管吸取背景
+                        </button>
+                    </div>
+                    <div id="pickedColorInfo" class="mt-1.5 text-[11px] text-gray-500 flex items-center hidden bg-gray-50 px-2 py-1 rounded border">
+                        當前鎖定：<span id="colorPreviewBox" class="w-3.5 h-3.5 inline-block border border-gray-400 ml-1 mr-1.5 rounded-sm" style="background-color: #ffffff;"></span>
+                        <span id="colorRgbText" class="font-mono">RGB(255, 255, 255)</span>
+                    </div>
+                </div>
+
+                <!-- 3. 極細微調滑桿 (0.0 ~ 25.0, Step 0.1) -->
+                <div class="mb-4 space-y-3 bg-purple-50/60 p-3 rounded-xl border border-purple-100">
+                    <div>
+                        <div class="flex justify-between items-center text-xs font-bold text-gray-700 mb-1">
+                            <label for="bgTolerance">3. 去背強度 (精細容差)</label>
+                            <div class="flex items-center space-x-1">
+                                <button type="button" id="btnTolMinus" class="w-5 h-5 bg-white border rounded text-gray-600 hover:bg-purple-100 flex items-center justify-center text-xs leading-none" title="-0.5">-</button>
+                                <span id="valTolerance" class="text-purple-700 font-mono w-9 text-center bg-white px-1 py-0.5 rounded border text-[11px]">8.0</span>
+                                <button type="button" id="btnTolPlus" class="w-5 h-5 bg-white border rounded text-gray-600 hover:bg-purple-100 flex items-center justify-center text-xs leading-none" title="+0.5">+</button>
+                            </div>
+                        </div>
+                        <input type="range" id="bgTolerance" min="0" max="25" step="0.1" value="8.0" class="w-full accent-purple-600 cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-gray-400 mt-0.5">
+                            <span>0 (極弱)</span>
+                            <span>建議: 3 ~ 15</span>
+                            <span>25 (上限)</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center text-xs font-bold text-gray-700 mb-1">
+                            <label for="bgSmoothing">4. 邊緣羽化 (消除鋸齒)</label>
+                            <div class="flex items-center space-x-1">
+                                <button type="button" id="btnSmoothMinus" class="w-5 h-5 bg-white border rounded text-gray-600 hover:bg-purple-100 flex items-center justify-center text-xs leading-none" title="-0.5">-</button>
+                                <span id="valSmoothing" class="text-purple-700 font-mono w-9 text-center bg-white px-1 py-0.5 rounded border text-[11px]">4.0</span>
+                                <button type="button" id="btnSmoothPlus" class="w-5 h-5 bg-white border rounded text-gray-600 hover:bg-purple-100 flex items-center justify-center text-xs leading-none" title="+0.5">+</button>
+                            </div>
+                        </div>
+                        <input type="range" id="bgSmoothing" min="0" max="15" step="0.1" value="4.0" class="w-full accent-purple-600 cursor-pointer">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center text-xs font-bold text-gray-700 mb-1">
+                            <label for="bgDefringe">5. 淨化白邊 (去除邊緣灰白暈)</label>
+                            <span id="valDefringe" class="text-purple-700 font-mono text-[11px]">80%</span>
+                        </div>
+                        <input type="range" id="bgDefringe" min="0" max="100" step="5" value="80" class="w-full accent-purple-600 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- 進階強化與自動裁邊 -->
+                <div class="mb-4 space-y-2 bg-gray-50 p-2.5 rounded-xl border text-xs">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="chkEnhanceText" class="w-3.5 h-3.5 accent-purple-600 rounded">
+                        <span class="font-bold text-gray-700">加深字跡與印章顏色</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="chkAutoCropBg" checked class="w-3.5 h-3.5 accent-teal-600 rounded">
+                        <span class="font-bold text-teal-800"><i class="fa-solid fa-crop-simple mr-1"></i>自動裁切周圍透明白邊</span>
+                    </label>
+                </div>
+
+                <div class="mt-auto space-y-2 pt-3 border-t">
+                    <button id="btnDownloadPng" disabled class="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold hover:opacity-95 shadow-md flex items-center justify-center transition disabled:opacity-50 text-sm">
+                        <i class="fa-solid fa-download mr-2"></i> 下載去背 PNG 檔案
+                    </button>
+                    <button id="btnSendToAnnotate" disabled class="w-full py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl font-bold hover:bg-blue-100 flex items-center justify-center transition disabled:opacity-50 text-sm">
+                        <i class="fa-solid fa-share mr-2"></i> 直接傳送到「批改區」
+                    </button>
+                    <button id="btnResetBgImage" disabled class="w-full py-1.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition disabled:opacity-50 text-xs font-semibold">
+                        重新選擇圖片
+                    </button>
+                </div>
+            </aside>
+
+            <!-- 右側圖片預覽與放大檢視區 -->
+            <div class="flex-1 p-6 flex flex-col items-center justify-center overflow-hidden relative" id="bgWorkspace">
+                <div id="uploadAreaBg" class="w-full max-w-2xl flex flex-col items-center justify-center border-2 border-dashed border-purple-300 rounded-2xl bg-white/80 p-12 hover:border-purple-500 hover:shadow-lg cursor-pointer transition-all duration-200">
+                    <div class="w-20 h-20 rounded-full bg-purple-50 flex items-center justify-center mb-4 text-purple-500">
+                        <i class="fa-solid fa-image text-4xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-700">點擊或拖曳圖片至此進行高精準去背</h2>
+                    <p class="text-gray-400 mt-2 text-sm">支援最高 400% 放大檢視像素細節與 0.1 級距微調</p>
+                    <input type="file" id="bgImageInput" accept="image/*" class="hidden">
+                </div>
+
+                <div id="bgPreviewContainer" class="hidden flex-col items-center w-full h-full">
+                    <!-- 預覽工具列：切換檢查底色 + 放大縮小檢視控制 -->
+                    <div class="mb-3 flex flex-wrap items-center justify-between gap-3 bg-white px-4 py-2.5 rounded-xl shadow-sm border w-full max-w-4xl shrink-0">
+                        <div class="flex items-center space-x-1.5">
+                            <span class="text-xs font-bold text-gray-600"><i class="fa-solid fa-palette mr-1 text-purple-600"></i>底色：</span>
+                            <button type="button" class="preview-bg-btn px-2.5 py-1 text-xs rounded-lg border bg-blue-50 border-blue-400 text-blue-700 font-bold" data-bg="bg-checkerboard">透明格</button>
+                            <button type="button" class="preview-bg-btn px-2.5 py-1 text-xs rounded-lg border bg-slate-800 text-white hover:opacity-90" data-bg="bg-dark-preview">純黑(查白邊)</button>
+                            <button type="button" class="preview-bg-btn px-2.5 py-1 text-xs rounded-lg border bg-yellow-50 text-gray-700 hover:bg-yellow-100" data-bg="bg-paper-preview">作業紙</button>
+                            <button type="button" class="preview-bg-btn px-2.5 py-1 text-xs rounded-lg border bg-white text-gray-700 hover:bg-gray-50" data-bg="bg-white-preview">純白</button>
+                        </div>
+
+                        <!-- 新增：去背圖像放大縮小控制列 -->
+                        <div class="flex items-center space-x-1.5 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
+                            <span class="text-xs font-bold text-purple-800"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>放大查看：</span>
+                            <button type="button" id="btnBgZoomOut" class="w-6 h-6 bg-white border rounded hover:bg-purple-100 text-xs font-bold flex items-center justify-center">-</button>
+                            <span id="bgZoomVal" class="font-mono text-xs font-bold text-purple-700 w-12 text-center">100%</span>
+                            <button type="button" id="btnBgZoomIn" class="w-6 h-6 bg-white border rounded hover:bg-purple-100 text-xs font-bold flex items-center justify-center">+</button>
+                            <button type="button" id="btnBgZoomReset" class="px-2 py-0.5 bg-white border rounded hover:bg-purple-100 text-[11px] font-semibold text-gray-600">適應視窗</button>
+                        </div>
+                    </div>
+
+                    <div id="eyedropperHint" class="hidden mb-2 text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full border border-amber-300 font-bold animate-pulse shrink-0">
+                        <i class="fa-solid fa-hand-pointer mr-1"></i> 請直接點擊下方圖片中您想要去除的背景區域（放大狀態下同樣精準）！
+                    </div>
+
+                    <!-- 支援捲動與放大的畫布外框 -->
+                    <div id="bgCanvasWrapper" class="border-2 border-gray-300 rounded-2xl overflow-auto shadow-inner bg-checkerboard w-full max-w-4xl flex-1 flex items-center justify-center p-6 transition-colors">
+                        <canvas id="bgCanvas" class="block transition-all duration-150 shadow-sm"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 模組 4：無廣告 YouTube 播放器 (Classroom Player) -->
+        <!-- ========================================== -->
+        <section id="viewYoutube" class="view-animate absolute inset-0 flex h-full hide transition-colors duration-500">
+            
+            <!-- 主播放器區 -->
+            <div class="flex-1 flex flex-col p-6 overflow-y-auto items-center">
+                
+                <!-- 頂部網址輸入與控制列 -->
+                <div class="w-full max-w-5xl bg-white p-4 rounded-2xl shadow-md border border-gray-200/80 mb-5 flex flex-wrap gap-3 items-center z-20">
+                    <div class="flex items-center text-red-600 font-black text-lg mr-1">
+                        <i class="fa-brands fa-youtube text-2xl mr-2"></i> 課堂純淨播放
+                    </div>
+                    <div class="flex-1 min-w-[260px] relative">
+                        <input type="text" id="ytUrlInput" placeholder="貼上 YouTube 影片網址、短網址 (youtu.be) 或 Shorts 連結..." class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-red-500 focus:bg-white transition">
+                        <i class="fa-solid fa-link absolute left-3 top-3 text-gray-400 text-sm"></i>
+                    </div>
+                    <button id="btnLoadYt" class="px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold rounded-xl shadow hover:opacity-95 transition text-sm flex items-center">
+                        <i class="fa-solid fa-play mr-1.5"></i> 立即播放
+                    </button>
+                    <button id="btnAddToPlaylist" class="px-3.5 py-2.5 bg-amber-50 text-amber-700 border border-amber-200 font-bold rounded-xl hover:bg-amber-100 transition text-sm flex items-center" title="將目前影片收藏至右側課堂清單">
+                        <i class="fa-solid fa-bookmark mr-1"></i> 收藏
+                    </button>
+                </div>
+
+                <!-- 影片嵌入視窗與多線路控制 -->
+                <div class="w-full max-w-5xl flex-1 flex flex-col">
+                    <div class="flex flex-wrap justify-between items-center mb-2.5 gap-2 px-1">
+                        <div class="flex items-center space-x-2 text-xs">
+                            <span class="font-bold text-gray-500"><i class="fa-solid fa-shield-cat mr-1 text-emerald-600"></i>淨化線路切換：</span>
+                            <button type="button" class="yt-engine-btn px-3 py-1 rounded-full font-bold bg-red-600 text-white shadow-sm transition" data-engine="nocookie">
+                                線路 1：官方隱私無追蹤 (推薦)
+                            </button>
+                            <button type="button" class="yt-engine-btn px-3 py-1 rounded-full font-bold bg-white text-gray-600 border hover:bg-gray-100 transition" data-engine="invidious" title="若官方線路仍有片頭廣告，可切換至開源無廣告線路">
+                                線路 2：Invidious 純淨鏡像
+                            </button>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <label class="flex items-center space-x-1 text-xs font-bold text-gray-600 bg-white px-3 py-1 rounded-full border cursor-pointer">
+                                <input type="checkbox" id="chkYtLoop" class="accent-red-600">
+                                <span>單曲循環播放</span>
+                            </label>
+                            <button id="btnCinemaDim" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-amber-300 hover:bg-slate-700 transition flex items-center shadow-sm">
+                                <i class="fa-solid fa-lightbulb mr-1.5"></i> 關燈專注模式
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 16:9 響應式黑板螢幕外框 -->
+                    <div class="relative w-full bg-slate-950 rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-800 aspect-video flex items-center justify-center">
+                        <!-- 尚未載入影片時的引導畫面 -->
+                        <div id="ytEmptyState" class="text-center p-8 text-slate-400">
+                            <div class="w-20 h-20 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-4 text-red-500 shadow-lg">
+                                <i class="fa-brands fa-youtube text-4xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-2">課堂無干擾 YouTube 播放器</h3>
+                            <p class="text-sm text-slate-400 max-w-md mx-auto">
+                                採用 <code class="text-emerald-400">youtube-nocookie</code> 教育嵌入協定，自動屏蔽片尾演算法推薦牆與追蹤廣告，讓學生專注於課堂教材。
+                            </p>
+                        </div>
+                        <iframe id="ytIframe" class="w-full h-full hidden" src="" title="YouTube Classroom Player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側：課堂播放清單 (儲存於 LocalStorage) -->
+            <aside class="w-72 bg-white border-l p-4 flex flex-col shadow-lg z-10">
+                <div class="flex justify-between items-center border-b pb-3 mb-3">
+                    <h3 class="font-bold text-gray-800 text-sm flex items-center">
+                        <i class="fa-solid fa-list-ul text-red-500 mr-2"></i>課堂常用影片清單
+                    </h3>
+                    <span class="text-[11px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold" id="ytPlaylistCount">0</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-3">準備好的教學或音樂示範影片可收藏於此，下次開啟網頁依然保留。</p>
+                
+                <div id="ytPlaylistContainer" class="flex-1 overflow-y-auto space-y-2 pr-1">
+                    <!-- 動態生成播放清單項目 -->
+                </div>
+            </aside>
+        </section>
+
+    </main>
+
+    <!-- ========================================== -->
+    <!-- 彈窗 1：高解析度放大檢視圖像燈箱 (Image/Page Zoom Lightbox) -->
+    <!-- ========================================== -->
+    <div id="zoomLightboxModal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center z-50 p-4">
+        <!-- 頂部控制列 -->
+        <div class="bg-white/10 backdrop-blur-md border border-white/20 text-white px-5 py-2.5 rounded-full mb-4 flex items-center space-x-4 shadow-xl">
+            <span id="lightboxTitle" class="text-sm font-bold text-blue-200 mr-2">頁面預覽</span>
+            <button id="btnLightboxZoomOut" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center transition" title="縮小"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+            <span id="lightboxZoomVal" class="font-mono text-sm font-bold w-14 text-center">100%</span>
+            <button id="btnLightboxZoomIn" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center transition" title="放大"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+            <div class="h-4 w-px bg-white/20"></div>
+            <button id="btnCloseLightbox" class="px-3 py-1 rounded-full bg-red-500/80 hover:bg-red-500 text-xs font-bold transition flex items-center">
+                <i class="fa-solid fa-xmark mr-1"></i> 關閉 (ESC)
+            </button>
+        </div>
+
+        <!-- 影像捲動容器 -->
+        <div class="flex-1 w-full overflow-auto flex items-center justify-center p-4" id="lightboxBody">
+            <img id="lightboxImg" src="" alt="Zoomed Preview" class="bg-white shadow-2xl rounded transition-all duration-150 max-w-none" style="width: 750px;">
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 彈窗 2：分拆匯出設定 (Split Options Modal)   -->
+    <!-- ========================================== -->
+    <div id="splitModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] flex flex-col view-animate">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h2 class="text-xl font-bold text-gray-800"><i class="fa-solid fa-scissors text-emerald-600 mr-2"></i>分拆匯出設定</h2>
+                <button id="btnCloseSplitModal" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <p class="text-sm text-gray-600 mb-3">目前工作區共有 <strong id="splitModalTotalPages" class="text-blue-600">0</strong> 頁（請參考縮圖左上角的 <span class="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded">#頁碼</span>）。</p>
+
+            <div class="space-y-4 mb-6 overflow-y-auto pr-1 flex-1">
+                <div class="p-3.5 border rounded-xl transition border-emerald-500 bg-emerald-50/70" id="lblSplitRange">
+                    <label class="flex items-center space-x-2 cursor-pointer mb-2">
+                        <input type="radio" name="splitMode" value="range" checked class="accent-emerald-600">
+                        <span class="font-bold text-gray-800">擷取指定頁數 / 範圍</span>
+                    </label>
+                    <div class="text-xs text-gray-600 mb-3 pl-5">
+                        如輸入 <code>1-3, 5</code> 即包含第 1, 2, 3, 5 頁並合併為同一個 PDF。
+                    </div>
+                    
+                    <div id="splitFilesContainer" class="space-y-2.5 pl-5 mb-3"></div>
+
+                    <div class="pl-5">
+                        <button type="button" id="btnAddSplitFile" class="text-xs bg-white border border-emerald-600 text-emerald-700 hover:bg-emerald-100 font-bold px-3 py-1.5 rounded-lg shadow-sm transition flex items-center">
+                            <i class="fa-solid fa-plus mr-1.5"></i> 增加一個檔案
+                        </button>
+                    </div>
+                </div>
+
+                <label class="flex items-start space-x-2 p-3.5 border rounded-xl cursor-pointer hover:bg-gray-50 transition" id="lblSplitAll">
+                    <input type="radio" name="splitMode" value="all" class="mt-1 accent-emerald-600">
+                    <div>
+                        <div class="font-bold text-gray-800">全部分拆（每頁一個檔案）</div>
+                        <div class="text-xs text-gray-500">將目前畫面上的每一頁，全部拆開成單獨的 PDF 檔案下載。</div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="flex space-x-3 pt-2 border-t">
+                <button id="btnCancelSplit" class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition">取消</button>
+                <button id="btnConfirmSplit" class="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-md transition flex items-center justify-center">
+                    <i class="fa-solid fa-file-export mr-2"></i> 開始分拆匯出
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 彈窗 3：權限警告彈窗 (Security Modal)        -->
+    <!-- ========================================== -->
+    <div id="securityModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-2xl max-w-lg shadow-2xl relative view-animate">
+            <div class="text-red-500 text-5xl mb-4 text-center"><i class="fa-solid fa-lock"></i></div>
+            <h2 class="text-2xl font-bold mb-2 text-center">無法讀取受保護的 PDF</h2>
+            <p class="text-gray-600 mb-4 text-sm text-center">此檔案設有發行商的「擁有者權限鎖定」，系統無法直接修改。</p>
+            <div class="bg-blue-50 p-4 rounded-xl text-sm text-blue-800 mb-6">
+                <strong>💡 解除權限小撇步：</strong><br>
+                1. 在瀏覽器中正常打開這個 PDF。<br>
+                2. 點擊右上角列印，選擇<strong>「另存為 PDF」</strong>。<br>
+                3. 將新產生的 PDF 上傳到這裡即可處理！
+            </div>
+            <button onclick="document.getElementById('securityModal').classList.add('hidden')" class="w-full py-2.5 bg-blue-600 text-white rounded-xl font-bold">了解並關閉</button>
+        </div>
+    </div>
+
+    <!-- JS 邏輯 -->
+    <script>
+        // === 通用工具函式：自動裁切 Canvas 透明邊緣 ===
+        function getTrimmedCanvas(sourceCanvas, padding = 4) {
+            const ctx = sourceCanvas.getContext('2d');
+            const width = sourceCanvas.width;
+            const height = sourceCanvas.height;
+            const imgData = ctx.getImageData(0, 0, width, height).data;
+
+            let top = height, left = width, right = 0, bottom = 0;
+            let foundOpaque = false;
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const alpha = imgData[(y * width + x) * 4 + 3];
+                    if (alpha > 15) {
+                        if (x < left) left = x;
+                        if (x > right) right = x;
+                        if (y < top) top = y;
+                        if (y > bottom) bottom = y;
+                        foundOpaque = true;
+                    }
+                }
+            }
+
+            if (!foundOpaque) return sourceCanvas;
+
+            left = Math.max(0, left - padding);
+            top = Math.max(0, top - padding);
+            right = Math.min(width - 1, right + padding);
+            bottom = Math.min(height - 1, bottom + padding);
+
+            const trimWidth = right - left + 1;
+            const trimHeight = bottom - top + 1;
+
+            const trimmedCanvas = document.createElement('canvas');
+            trimmedCanvas.width = trimWidth;
+            trimmedCanvas.height = trimHeight;
+            trimmedCanvas.getContext('2d').drawImage(
+                sourceCanvas,
+                left, top, trimWidth, trimHeight,
+                0, 0, trimWidth, trimHeight
+            );
+
+            return trimmedCanvas;
+        }
+
+        function hexToRgba(hex, alpha = 0.4) {
+            let r = parseInt(hex.slice(1, 3), 16),
+                g = parseInt(hex.slice(3, 5), 16),
+                b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        // === 高解析度放大檢視燈箱 (Zoom Lightbox) ===
+        const lightbox = {
+            modal: document.getElementById('zoomLightboxModal'),
+            img: document.getElementById('lightboxImg'),
+            title: document.getElementById('lightboxTitle'),
+            val: document.getElementById('lightboxZoomVal'),
+            scale: 1.0,
+            baseWidth: 750
+        };
+
+        function openZoomLightbox(dataUrl, titleText = '高解析度預覽') {
+            lightbox.img.src = dataUrl;
+            lightbox.title.textContent = titleText;
+            lightbox.scale = 1.0;
+            updateLightboxScale();
+            lightbox.modal.classList.remove('hidden');
+        }
+
+        function updateLightboxScale() {
+            lightbox.img.style.width = `${Math.round(lightbox.baseWidth * lightbox.scale)}px`;
+            lightbox.val.textContent = `${Math.round(lightbox.scale * 100)}%`;
+        }
+
+        document.getElementById('btnLightboxZoomIn').onclick = () => {
+            lightbox.scale = Math.min(3.0, lightbox.scale + 0.25);
+            updateLightboxScale();
+        };
+        document.getElementById('btnLightboxZoomOut').onclick = () => {
+            lightbox.scale = Math.max(0.4, lightbox.scale - 0.25);
+            updateLightboxScale();
+        };
+        document.getElementById('btnCloseLightbox').onclick = () => lightbox.modal.classList.add('hidden');
+        lightbox.modal.addEventListener('click', (e) => {
+            if (e.target === lightbox.modal || e.target.id === 'lightboxBody') lightbox.modal.classList.add('hidden');
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') lightbox.modal.classList.add('hidden');
+        });
+
+        // === 四大分頁切換邏輯 ===
+        const views = {
+            organize: document.getElementById('viewOrganize'),
+            annotate: document.getElementById('viewAnnotate'),
+            bgRemover: document.getElementById('viewBgRemover'),
+            youtube: document.getElementById('viewYoutube')
+        };
+        const tabs = {
+            organize: document.getElementById('tabBtnOrganize'),
+            annotate: document.getElementById('tabBtnAnnotate'),
+            bgRemover: document.getElementById('tabBtnBgRemover'),
+            youtube: document.getElementById('tabBtnYoutube')
+        };
+
+        function switchTab(target) {
+            Object.keys(views).forEach(k => {
+                if (k === target) {
+                    views[k].classList.remove('hide');
+                    tabs[k].className = "px-3.5 py-2 rounded-lg text-sm font-bold bg-white shadow-sm text-blue-600 transition-all flex items-center";
+                } else {
+                    views[k].classList.add('hide');
+                    tabs[k].className = "px-3.5 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-white/60 transition-all flex items-center";
+                }
+            });
+        }
+
+        tabs.organize.addEventListener('click', () => switchTab('organize'));
+        tabs.annotate.addEventListener('click', () => switchTab('annotate'));
+        tabs.bgRemover.addEventListener('click', () => switchTab('bgRemover'));
+        tabs.youtube.addEventListener('click', () => switchTab('youtube'));
+
+        // ==========================================
+        // 模組 1：頁面管理邏輯 (含點擊放大檢視單頁)
+        // ==========================================
+        let organizeFiles = []; 
+        let organizePdfDocs = []; // 儲存 PDF.js doc 實例以供高解析度放大渲染
+        const pagesGrid = document.getElementById('pagesGrid');
+        const organizeDropZone = document.getElementById('organizeDropZone');
+        const emptyOrganizeState = document.getElementById('emptyOrganizeState');
+        
+        new Sortable(pagesGrid, { 
+            animation: 200, 
+            ghostClass: 'opacity-40',
+            onEnd: updateGridPageNumbers
+        });
+
+        function updateGridPageNumbers() {
+            const items = Array.from(pagesGrid.children);
+            items.forEach((el, idx) => {
+                const badge = el.querySelector('.current-page-badge');
+                if (badge) badge.textContent = `#${idx + 1}`;
+            });
+            if (items.length === 0) emptyOrganizeState.classList.remove('hidden');
+        }
+
+        document.getElementById('btnUploadOrganize').addEventListener('click', () => document.getElementById('fileOrganize').click());
+        document.getElementById('fileOrganize').addEventListener('change', (e) => handleOrganizeUpload(e.target.files));
+
+        organizeDropZone.addEventListener('dragover', (e) => { e.preventDefault(); emptyOrganizeState.classList.add('border-blue-500', 'bg-blue-50/60'); });
+        organizeDropZone.addEventListener('dragleave', (e) => { e.preventDefault(); emptyOrganizeState.classList.remove('border-blue-500', 'bg-blue-50/60'); });
+        organizeDropZone.addEventListener('drop', (e) => {
+            e.preventDefault(); emptyOrganizeState.classList.remove('border-blue-500', 'bg-blue-50/60');
+            if (e.dataTransfer.files.length > 0) handleOrganizeUpload(e.dataTransfer.files);
+        });
+
+        async function handleOrganizeUpload(files) {
+            if(!files || files.length === 0) return;
+            emptyOrganizeState.classList.add('hidden');
+            for (let file of files) {
+                if (file.type !== 'application/pdf') continue;
+                const bytes = new Uint8Array(await file.arrayBuffer());
+                try {
+                    const testLib = await PDFLib.PDFDocument.load(bytes);
+                    if(testLib.isEncrypted) throw new Error('Encrypted');
+                    const fileIndex = organizeFiles.length;
+                    organizeFiles.push(bytes);
+                    const pdfDoc = await pdfjsLib.getDocument(bytes).promise;
+                    organizePdfDocs.push(pdfDoc);
+                    for (let i = 1; i <= pdfDoc.numPages; i++) {
+                        await addPageToGrid(pdfDoc, i, fileIndex);
+                    }
+                    updateGridPageNumbers();
+                } catch(err) { document.getElementById('securityModal').classList.remove('hidden'); }
+            }
+            document.getElementById('fileOrganize').value = '';
+        }
+
+        async function addPageToGrid(pdfDoc, pageNum, fileIndex) {
+            const page = await pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 0.6 });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width; canvas.height = viewport.height;
+            canvas.className = "w-full border rounded-lg shadow-xs bg-white";
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+
+            const div = document.createElement('div');
+            div.className = "page-thumbnail relative bg-white p-2.5 rounded-xl shadow-sm border border-gray-200/80 flex flex-col items-center group";
+            div.dataset.fileIndex = fileIndex; div.dataset.pageNum = pageNum; div.dataset.rotation = 0;
+
+            const badge = document.createElement('div');
+            badge.className = "current-page-badge absolute top-3.5 left-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-md shadow z-10";
+            badge.textContent = `#${pagesGrid.children.length + 1}`;
+
+            const rotateWrapper = document.createElement('div');
+            rotateWrapper.className = "w-full overflow-hidden flex justify-center items-center mb-2 bg-slate-50 rounded-lg relative cursor-pointer";
+            rotateWrapper.style.minHeight = "160px";
+            canvas.style.transition = "transform 0.3s ease";
+            rotateWrapper.appendChild(canvas);
+
+            // 雙擊縮圖直接放大預覽
+            const triggerZoomPreview = async () => {
+                const hiPage = await organizePdfDocs[fileIndex].getPage(pageNum);
+                const hiViewport = hiPage.getViewport({ scale: 2.0 });
+                const hiCanvas = document.createElement('canvas');
+                hiCanvas.width = hiViewport.width; hiCanvas.height = hiViewport.height;
+                await hiPage.render({ canvasContext: hiCanvas.getContext('2d'), viewport: hiViewport }).promise;
+                openZoomLightbox(hiCanvas.toDataURL('image/png'), `原檔 ${fileIndex + 1} - 第 ${pageNum} 頁 (高畫質檢視)`);
+            };
+            rotateWrapper.ondblclick = triggerZoomPreview;
+
+            const controls = document.createElement('div');
+            controls.className = "w-full flex justify-between items-center mt-1 text-gray-500 border-t pt-1.5";
+            
+            const btnZoom = document.createElement('button');
+            btnZoom.innerHTML = '<i class="fa-solid fa-magnifying-glass-plus"></i>';
+            btnZoom.className = "p-1.5 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition";
+            btnZoom.title = "放大查看此頁內容";
+            btnZoom.onclick = triggerZoomPreview;
+
+            const btnRotate = document.createElement('button');
+            btnRotate.innerHTML = '<i class="fa-solid fa-rotate-right"></i>';
+            btnRotate.className = "p-1.5 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition";
+            btnRotate.title = "順時針旋轉 90 度";
+            btnRotate.onclick = () => {
+                let currentRot = (parseInt(div.dataset.rotation) + 90) % 360;
+                div.dataset.rotation = currentRot;
+                canvas.style.transform = `rotate(${currentRot}deg)`;
+            };
+
+            const btnDelete = document.createElement('button');
+            btnDelete.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+            btnDelete.className = "p-1.5 hover:text-red-600 hover:bg-red-50 rounded-lg transition";
+            btnDelete.title = "刪除此頁";
+            btnDelete.onclick = () => { 
+                div.remove(); 
+                updateGridPageNumbers();
+            };
+
+            const lbl = document.createElement('span');
+            lbl.className = "text-[11px] text-gray-400 font-bold"; 
+            lbl.innerText = `檔${fileIndex+1}-P.${pageNum}`;
+
+            const leftBtns = document.createElement('div');
+            leftBtns.className = "flex space-x-0.5";
+            leftBtns.appendChild(btnZoom);
+            leftBtns.appendChild(btnRotate);
+
+            controls.appendChild(leftBtns);
+            controls.appendChild(lbl);
+            controls.appendChild(btnDelete);
+
+            div.appendChild(badge); div.appendChild(rotateWrapper); div.appendChild(controls); 
+            pagesGrid.appendChild(div);
+        }
+
+        document.getElementById('btnClearOrganize').addEventListener('click', () => {
+            pagesGrid.innerHTML = ''; organizeFiles = []; organizePdfDocs = []; emptyOrganizeState.classList.remove('hidden');
+        });
+
+        document.getElementById('btnExportMerged').addEventListener('click', async () => {
+            const elements = Array.from(pagesGrid.children);
+            if(elements.length === 0) return alert("請先加入 PDF 頁面！");
+            const btn = document.getElementById('btnExportMerged');
+            const originalHTML = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 處理中';
+            try {
+                const mergedPdf = await PDFLib.PDFDocument.create();
+                const loadedDocs = {}; 
+                for (let el of elements) {
+                    const fIdx = el.dataset.fileIndex; const pIdx = parseInt(el.dataset.pageNum) - 1; const rot = parseInt(el.dataset.rotation);
+                    if (!loadedDocs[fIdx]) loadedDocs[fIdx] = await PDFLib.PDFDocument.load(organizeFiles[fIdx]);
+                    const [copiedPage] = await mergedPdf.copyPages(loadedDocs[fIdx], [pIdx]);
+                    if (rot !== 0) copiedPage.setRotation(PDFLib.degrees(copiedPage.getRotation().angle + rot));
+                    mergedPdf.addPage(copiedPage);
+                }
+                downloadFile(await mergedPdf.save(), `合併文件_${Date.now()}.pdf`, "application/pdf");
+            } catch(e) { alert("匯出失敗：" + e.message); } finally { btn.innerHTML = originalHTML; }
+        });
+
+        // === 分拆匯出彈窗與多檔案設定邏輯 ===
+        const splitModal = document.getElementById('splitModal');
+        const splitFilesContainer = document.getElementById('splitFilesContainer');
+        const btnAddSplitFile = document.getElementById('btnAddSplitFile');
+        const lblSplitRange = document.getElementById('lblSplitRange');
+        const lblSplitAll = document.getElementById('lblSplitAll');
+        const radiosSplitMode = document.getElementsByName('splitMode');
+
+        const chineseNums = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+        function getFileOrderLabel(index) {
+            if (index < 10) return `第${chineseNums[index]}個檔案：`;
+            return `第 ${index + 1} 個檔案：`;
+        }
+
+        function updateSplitFileLabels() {
+            const rows = Array.from(splitFilesContainer.children);
+            rows.forEach((row, idx) => {
+                const lbl = row.querySelector('.file-order-label');
+                if (lbl) lbl.textContent = getFileOrderLabel(idx);
+                const btnDel = row.querySelector('.btn-remove-split-row');
+                if (btnDel) btnDel.classList.toggle('hidden', rows.length <= 1);
+            });
+        }
+
+        function createSplitFileRow(defaultValue = '') {
+            const row = document.createElement('div');
+            row.className = "flex items-center space-x-2";
+            
+            const label = document.createElement('span');
+            label.className = "file-order-label text-xs font-bold text-gray-700 w-24 shrink-0";
+            label.textContent = getFileOrderLabel(splitFilesContainer.children.length);
+
+            const input = document.createElement('input');
+            input.type = "text";
+            input.value = defaultValue;
+            input.placeholder = "例如: 1-3, 5";
+            input.className = "split-file-input flex-1 p-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-emerald-600 bg-white";
+            
+            input.addEventListener('focus', () => {
+                radiosSplitMode[0].checked = true;
+                radiosSplitMode[0].dispatchEvent(new Event('change'));
+            });
+
+            const btnRemove = document.createElement('button');
+            btnRemove.type = "button";
+            btnRemove.className = "btn-remove-split-row text-gray-400 hover:text-red-500 px-1.5 py-1 transition hidden";
+            btnRemove.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+            btnRemove.onclick = () => {
+                row.remove();
+                updateSplitFileLabels();
+            };
+
+            row.appendChild(label);
+            row.appendChild(input);
+            row.appendChild(btnRemove);
+            splitFilesContainer.appendChild(row);
+            updateSplitFileLabels();
+        }
+
+        btnAddSplitFile.addEventListener('click', () => {
+            radiosSplitMode[0].checked = true;
+            radiosSplitMode[0].dispatchEvent(new Event('change'));
+            createSplitFileRow('');
+            const inputs = splitFilesContainer.querySelectorAll('.split-file-input');
+            if (inputs.length > 0) inputs[inputs.length - 1].focus();
+        });
+
+        radiosSplitMode.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const inputs = splitFilesContainer.querySelectorAll('.split-file-input');
+                if (e.target.value === 'range') {
+                    lblSplitRange.classList.add('border-emerald-500', 'bg-emerald-50/70');
+                    lblSplitAll.classList.remove('border-emerald-500', 'bg-emerald-50/70');
+                    inputs.forEach(inp => inp.disabled = false);
+                    btnAddSplitFile.disabled = false;
+                    btnAddSplitFile.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    lblSplitAll.classList.add('border-emerald-500', 'bg-emerald-50/70');
+                    lblSplitRange.classList.remove('border-emerald-500', 'bg-emerald-50/70');
+                    inputs.forEach(inp => inp.disabled = true);
+                    btnAddSplitFile.disabled = true;
+                    btnAddSplitFile.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            });
+        });
+
+        document.getElementById('btnOpenSplitModal').addEventListener('click', () => {
+            const total = pagesGrid.children.length;
+            if (total === 0) return alert("請先加入 PDF 頁面！");
+            document.getElementById('splitModalTotalPages').textContent = total;
+            if (splitFilesContainer.children.length === 0) {
+                const defaultVal = total >= 3 ? `1-3` : `1`;
+                createSplitFileRow(defaultVal);
+            }
+            splitModal.classList.remove('hidden');
+        });
+
+        const closeSplitModal = () => splitModal.classList.add('hidden');
+        document.getElementById('btnCloseSplitModal').addEventListener('click', closeSplitModal);
+        document.getElementById('btnCancelSplit').addEventListener('click', closeSplitModal);
+
+        function parseSingleFilePages(inputStr, maxPages, fileIndex) {
+            const parts = inputStr.split(',').map(s => s.trim()).filter(Boolean);
+            if (parts.length === 0) {
+                throw new Error(`請在「${getFileOrderLabel(fileIndex).replace('：','')}」輸入頁數範圍（例如：1-3, 5）！`);
+            }
+            
+            const indices = [];
+            for (let part of parts) {
+                if (part.includes('-')) {
+                    const [startStr, endStr] = part.split('-').map(s => s.trim());
+                    const start = parseInt(startStr, 10);
+                    const end = parseInt(endStr, 10);
+                    if (isNaN(start) || isNaN(end) || start < 1 || end > maxPages || start > end) {
+                        throw new Error(`「${getFileOrderLabel(fileIndex).replace('：','')}」中的範圍「${part}」無效！請輸入 1 到 ${maxPages} 之間的頁碼。`);
+                    }
+                    for (let i = start; i <= end; i++) indices.push(i - 1);
+                } else {
+                    const page = parseInt(part, 10);
+                    if (isNaN(page) || page < 1 || page > maxPages) {
+                        throw new Error(`「${getFileOrderLabel(fileIndex).replace('：','')}」中的頁碼「${part}」無效！請輸入 1 到 ${maxPages} 之間的數字。`);
+                    }
+                    indices.push(page - 1);
+                }
+            }
+            const cleanLabel = inputStr.replace(/\s+/g, '').replace(/,/g, '_');
+            return { label: `檔案${fileIndex + 1}_P${cleanLabel}`, indices };
+        }
+
+        document.getElementById('btnConfirmSplit').addEventListener('click', async () => {
+            const elements = Array.from(pagesGrid.children);
+            const total = elements.length;
+            if (total === 0) return;
+
+            const mode = Array.from(radiosSplitMode).find(r => r.checked).value;
+            let exportGroups = [];
+
+            if (mode === 'all') {
+                if (total > 20 && !confirm(`即將分別下載 ${total} 個單頁 PDF 檔案，是否繼續？`)) return;
+                exportGroups = elements.map((_, idx) => ({ label: `第${idx + 1}頁`, indices: [idx] }));
+            } else {
+                try {
+                    const inputs = Array.from(splitFilesContainer.querySelectorAll('.split-file-input'));
+                    if (inputs.length === 0) throw new Error("請至少設定一個檔案的頁數範圍！");
+                    inputs.forEach((inp, idx) => {
+                        exportGroups.push(parseSingleFilePages(inp.value, total, idx));
+                    });
+                } catch (err) {
+                    return alert(err.message);
+                }
+            }
+
+            const btn = document.getElementById('btnConfirmSplit');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 處理中...';
+            btn.disabled = true;
+
+            try {
+                const loadedDocs = {};
+                for (let group of exportGroups) {
+                    const newPdf = await PDFLib.PDFDocument.create();
+                    for (let elemIdx of group.indices) {
+                        const el = elements[elemIdx];
+                        const fIdx = el.dataset.fileIndex;
+                        const pIdx = parseInt(el.dataset.pageNum) - 1;
+                        const rot = parseInt(el.dataset.rotation);
+
+                        if (!loadedDocs[fIdx]) {
+                            loadedDocs[fIdx] = await PDFLib.PDFDocument.load(organizeFiles[fIdx]);
+                        }
+                        const [copiedPage] = await newPdf.copyPages(loadedDocs[fIdx], [pIdx]);
+                        if (rot !== 0) {
+                            copiedPage.setRotation(PDFLib.degrees(copiedPage.getRotation().angle + rot));
+                        }
+                        newPdf.addPage(copiedPage);
+                    }
+                    const pdfBytes = await newPdf.save();
+                    downloadFile(pdfBytes, `分拆_${group.label}.pdf`, "application/pdf");
+                    await new Promise(r => setTimeout(r, 250));
+                }
+                closeSplitModal();
+            } catch (e) {
+                alert("分拆匯出時發生錯誤：" + e.message);
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        });
+
+
+        // ==========================================
+        // 模組 2：批改及簽署邏輯 (含無損放大縮小檢視)
+        // ==========================================
+        const BASE_ANNOTATE_SCALE = 1.5;
+        const annotateState = {
+            pdfBytes: null, pdfDocJS: null, pdfDocLib: null,
+            pageNum: 1, totalPages: 0, fabricCanvas: null, pageAnnotations: {},
+            undoStack: [], isUndoAction: false, 
+            zoomRatio: 1.0, // 1.0 = 100%, 支援 0.5 ~ 2.5
+            baseWidth: 0, baseHeight: 0,
+            currentTool: 'pen',
+            activeStamp: null
+        };
+
+        const uia = {
+            upload: document.getElementById('uploadAreaAnnotate'), input: document.getElementById('pdfUploadAnnotate'),
+            editor: document.getElementById('editorArea'), rightPanel: document.getElementById('rightPanelAnnotate'),
+            wrapper: document.getElementById('canvasWrapper'), pdfCanvas: document.getElementById('pdfCanvas'),
+            btnUndo: document.getElementById('btnUndo'),
+            stampBanner: document.getElementById('stampModeBanner'),
+            currentStampIcon: document.getElementById('currentStampIcon'),
+            zoomVal: document.getElementById('annotateZoomVal')
+        };
+
+        uia.upload.addEventListener('click', () => uia.input.click());
+        uia.input.addEventListener('change', (e) => handleAnnotateUpload(e.target.files[0]));
+        uia.upload.addEventListener('dragover', (e) => { e.preventDefault(); uia.upload.classList.add('border-indigo-500', 'bg-indigo-50/50'); });
+        uia.upload.addEventListener('dragleave', (e) => { e.preventDefault(); uia.upload.classList.remove('border-indigo-500', 'bg-indigo-50/50'); });
+        uia.upload.addEventListener('drop', (e) => {
+            e.preventDefault(); uia.upload.classList.remove('border-indigo-500', 'bg-indigo-50/50');
+            if (e.dataTransfer.files.length > 0) handleAnnotateUpload(e.dataTransfer.files[0]);
+        });
+
+        document.getElementById('btnCloseAnnotate').addEventListener('click', () => {
+            uia.editor.classList.add('hidden'); uia.rightPanel.classList.add('hidden'); uia.upload.classList.remove('hidden');
+            if(annotateState.fabricCanvas) annotateState.fabricCanvas.clear();
+            annotateState.pageAnnotations = {}; uia.input.value = '';
+            exitStampMode();
+        });
+
+        // 批改區無損放大縮小控制
+        async function applyAnnotateZoom(newRatio) {
+            if (!annotateState.pdfDocJS) return;
+            annotateState.zoomRatio = Math.max(0.5, Math.min(2.5, newRatio));
+            uia.zoomVal.textContent = `${Math.round(annotateState.zoomRatio * 100)}%`;
+
+            // 儲存當前畫布物件，重新渲染底層高解析度 PDF，並套用 Fabric 縮放矩陣
+            const page = await annotateState.pdfDocJS.getPage(annotateState.pageNum);
+            const currentScale = BASE_ANNOTATE_SCALE * annotateState.zoomRatio;
+            const viewport = page.getViewport({ scale: currentScale });
+
+            uia.pdfCanvas.width = viewport.width;
+            uia.pdfCanvas.height = viewport.height;
+            uia.wrapper.style.width = `${viewport.width}px`;
+            uia.wrapper.style.height = `${viewport.height}px`;
+
+            await page.render({ canvasContext: uia.pdfCanvas.getContext('2d'), viewport: viewport }).promise;
+
+            if (annotateState.fabricCanvas) {
+                annotateState.fabricCanvas.setWidth(viewport.width);
+                annotateState.fabricCanvas.setHeight(viewport.height);
+                annotateState.fabricCanvas.setZoom(annotateState.zoomRatio);
+                annotateState.fabricCanvas.renderAll();
+            }
+        }
+
+        document.getElementById('btnAnnotateZoomIn').onclick = () => applyAnnotateZoom(annotateState.zoomRatio + 0.25);
+        document.getElementById('btnAnnotateZoomOut').onclick = () => applyAnnotateZoom(annotateState.zoomRatio - 0.25);
+        uia.zoomVal.onclick = () => applyAnnotateZoom(1.0);
+
+        async function handleAnnotateUpload(file) {
+            if (!file || file.type !== 'application/pdf') return;
+            const bytes = new Uint8Array(await file.arrayBuffer());
+            try {
+                annotateState.pdfDocLib = await PDFLib.PDFDocument.load(bytes);
+                if (annotateState.pdfDocLib.isEncrypted) throw new Error("Encrypted");
+                annotateState.pdfBytes = bytes;
+                annotateState.pdfDocJS = await pdfjsLib.getDocument(bytes).promise;
+                annotateState.totalPages = annotateState.pdfDocJS.numPages;
+                annotateState.zoomRatio = 1.0;
+                uia.zoomVal.textContent = '100%';
+                document.getElementById('pageCount').textContent = annotateState.totalPages;
+                uia.upload.classList.add('hidden'); uia.editor.classList.remove('hidden'); uia.editor.classList.add('flex'); uia.rightPanel.classList.remove('hidden');
+                annotateState.pageAnnotations = {}; renderAnnotatePage(1);
+            } catch (err) { document.getElementById('securityModal').classList.remove('hidden'); uia.input.value = ''; }
+        }
+
+        function initFabric() {
+            if (annotateState.fabricCanvas) annotateState.fabricCanvas.dispose();
+            annotateState.fabricCanvas = new fabric.Canvas('fabricCanvas', { isDrawingMode: true });
+            setupBrush();
+            
+            annotateState.fabricCanvas.on('path:created', saveStateToUndo);
+            annotateState.fabricCanvas.on('object:added', saveStateToUndo);
+            annotateState.fabricCanvas.on('object:modified', saveStateToUndo);
+            annotateState.fabricCanvas.on('object:removed', saveStateToUndo);
+
+            annotateState.fabricCanvas.on('mouse:down', function(opt) {
+                if (annotateState.currentTool === 'stamp' && annotateState.activeStamp) {
+                    if (opt.target) return; 
+                    
+                    // getPointer 會自動換算當前 Zoom 比例下的正確座標
+                    const pointer = annotateState.fabricCanvas.getPointer(opt.e);
+                    const size = parseInt(document.getElementById('stampSize').value, 10);
+                    const st = annotateState.activeStamp;
+
+                    let stampObj;
+                    if (st.isBox) {
+                        stampObj = new fabric.IText(` ${st.text} `, {
+                            left: pointer.x, top: pointer.y,
+                            originX: 'center', originY: 'center',
+                            fontSize: size * 0.75,
+                            fill: st.color,
+                            fontFamily: 'serif',
+                            fontWeight: 'bold',
+                            borderColor: st.color,
+                            backgroundColor: 'rgba(255,255,255,0.75)',
+                            stroke: st.color,
+                            strokeWidth: 1.5
+                        });
+                    } else {
+                        stampObj = new fabric.Text(st.text, {
+                            left: pointer.x, top: pointer.y,
+                            originX: 'center', originY: 'center',
+                            fontSize: size,
+                            fill: st.color,
+                            fontWeight: 'bold'
+                        });
+                    }
+
+                    annotateState.fabricCanvas.add(stampObj);
+                    annotateState.fabricCanvas.renderAll();
+                }
+            });
+        }
+
+        function setupBrush() {
+            if(!annotateState.fabricCanvas) return;
+            const colorHex = document.getElementById('colorPicker').value;
+            const size = parseInt(document.getElementById('brushSize').value, 10);
+            document.getElementById('brushSizeVal').textContent = `${size}px`;
+
+            if (annotateState.currentTool === 'highlighter') {
+                annotateState.fabricCanvas.freeDrawingBrush.color = hexToRgba(colorHex, 0.38);
+                annotateState.fabricCanvas.freeDrawingBrush.width = Math.max(size, 18);
+            } else {
+                annotateState.fabricCanvas.freeDrawingBrush.color = colorHex;
+                annotateState.fabricCanvas.freeDrawingBrush.width = size;
+            }
+
+            const activeObj = annotateState.fabricCanvas.getActiveObject();
+            if (activeObj) {
+                if (activeObj.type === 'i-text' || activeObj.type === 'text') {
+                    activeObj.set('fill', colorHex);
+                } else if (['rect', 'circle', 'triangle', 'line'].includes(activeObj.type)) {
+                    activeObj.set('stroke', colorHex);
+                }
+                annotateState.fabricCanvas.renderAll();
+            }
+        }
+
+        document.getElementById('colorPicker').addEventListener('input', setupBrush);
+        document.getElementById('brushSize').addEventListener('input', setupBrush);
+
+        function saveStateToUndo() {
+            if(annotateState.isUndoAction) return;
+            annotateState.undoStack.push(JSON.stringify(annotateState.fabricCanvas));
+            if(annotateState.undoStack.length > 25) annotateState.undoStack.shift();
+            uia.btnUndo.disabled = annotateState.undoStack.length <= 1;
+        }
+
+        uia.btnUndo.addEventListener('click', () => {
+            if(annotateState.undoStack.length > 1) {
+                annotateState.isUndoAction = true; annotateState.undoStack.pop();
+                annotateState.fabricCanvas.loadFromJSON(annotateState.undoStack[annotateState.undoStack.length - 1], () => {
+                    annotateState.fabricCanvas.renderAll(); annotateState.isUndoAction = false;
+                    uia.btnUndo.disabled = annotateState.undoStack.length <= 1;
+                });
+            }
+        });
+
+        async function renderAnnotatePage(pageNum) {
+            if (annotateState.fabricCanvas) annotateState.pageAnnotations[annotateState.pageNum] = annotateState.fabricCanvas.toJSON();
+            annotateState.pageNum = pageNum; document.getElementById('pageNum').textContent = pageNum;
+            
+            const page = await annotateState.pdfDocJS.getPage(pageNum);
+            const baseViewport = page.getViewport({ scale: BASE_ANNOTATE_SCALE });
+            annotateState.baseWidth = baseViewport.width;
+            annotateState.baseHeight = baseViewport.height;
+
+            const currentViewport = page.getViewport({ scale: BASE_ANNOTATE_SCALE * annotateState.zoomRatio });
+            uia.pdfCanvas.width = currentViewport.width; uia.pdfCanvas.height = currentViewport.height;
+            uia.wrapper.style.width = `${currentViewport.width}px`; uia.wrapper.style.height = `${currentViewport.height}px`;
+            await page.render({ canvasContext: uia.pdfCanvas.getContext('2d'), viewport: currentViewport }).promise;
+
+            if (!annotateState.fabricCanvas) initFabric();
+            annotateState.fabricCanvas.setWidth(currentViewport.width); 
+            annotateState.fabricCanvas.setHeight(currentViewport.height);
+            annotateState.fabricCanvas.setZoom(annotateState.zoomRatio);
+
+            if (annotateState.pageAnnotations[pageNum]) {
+                annotateState.isUndoAction = true;
+                annotateState.fabricCanvas.loadFromJSON(annotateState.pageAnnotations[pageNum], () => {
+                    annotateState.fabricCanvas.setZoom(annotateState.zoomRatio);
+                    annotateState.fabricCanvas.renderAll();
+                    annotateState.undoStack = [JSON.stringify(annotateState.fabricCanvas)];
+                    annotateState.isUndoAction = false; uia.btnUndo.disabled = true;
+                });
+            } else {
+                annotateState.fabricCanvas.clear(); setupBrush(); annotateState.undoStack = []; saveStateToUndo();
+            }
+        }
+
+        document.getElementById('prevPage').addEventListener('click', () => { if(annotateState.pageNum > 1) renderAnnotatePage(annotateState.pageNum - 1); });
+        document.getElementById('nextPage').addEventListener('click', () => { if(annotateState.pageNum < annotateState.totalPages) renderAnnotatePage(annotateState.pageNum + 1); });
+
+        const annTools = ['btnPen', 'btnHighlighter', 'btnSelect', 'btnText', 'btnDateStamp', 'btnImage', 'btnShapeLine', 'btnShapeRect', 'btnShapeCircle', 'btnShapeTriangle'];
+        
+        function setAnnTool(id, modeName = 'select') {
+            exitStampMode();
+            annTools.forEach(t => {
+                const el = document.getElementById(t);
+                if(el) el.classList.remove('active', 'bg-blue-50');
+            });
+            if(document.getElementById(id)) document.getElementById(id).classList.add('active');
+            annotateState.currentTool = modeName;
+        }
+
+        document.getElementById('btnPen').onclick = () => { 
+            setAnnTool('btnPen', 'pen'); 
+            if (document.getElementById('colorPicker').value === '#eab308') document.getElementById('colorPicker').value = '#ef4444';
+            if (parseInt(document.getElementById('brushSize').value) >= 18) document.getElementById('brushSize').value = 3;
+            annotateState.fabricCanvas.isDrawingMode = true; annotateState.fabricCanvas.selection = false; 
+            setupBrush();
+        };
+
+        document.getElementById('btnHighlighter').onclick = () => {
+            setAnnTool('btnHighlighter', 'highlighter');
+            if (document.getElementById('colorPicker').value === '#ef4444') document.getElementById('colorPicker').value = '#eab308';
+            if (parseInt(document.getElementById('brushSize').value) < 18) document.getElementById('brushSize').value = 22;
+            annotateState.fabricCanvas.isDrawingMode = true; annotateState.fabricCanvas.selection = false;
+            setupBrush();
+        };
+
+        document.getElementById('btnSelect').onclick = () => { 
+            setAnnTool('btnSelect', 'select'); 
+            annotateState.fabricCanvas.isDrawingMode = false; annotateState.fabricCanvas.selection = true; 
+        };
+        
+        document.getElementById('btnText').onclick = () => {
+            setAnnTool('btnSelect', 'select'); annotateState.fabricCanvas.isDrawingMode = false;
+            const text = new fabric.IText('點擊輸入評語', { 
+                left: annotateState.baseWidth / 2 - 80, top: annotateState.baseHeight / 3, 
+                fill: document.getElementById('colorPicker').value, fontSize: 28, fontFamily: 'sans-serif'
+            });
+            annotateState.fabricCanvas.add(text); annotateState.fabricCanvas.setActiveObject(text);
+        };
+
+        function addGeometricShape(type) {
+            if (!annotateState.fabricCanvas) return;
+            setAnnTool('btnSelect', 'select');
+            annotateState.fabricCanvas.isDrawingMode = false;
+            
+            const strokeColor = document.getElementById('colorPicker').value;
+            const strokeWidth = Math.max(2, Math.min(10, parseInt(document.getElementById('brushSize').value, 10)));
+            const centerX = annotateState.baseWidth / 2;
+            const centerY = annotateState.baseHeight / 2;
+
+            let shape;
+            const commonProps = {
+                fill: 'transparent', stroke: strokeColor, strokeWidth: strokeWidth,
+                strokeUniform: true, transparentCorners: false, cornerColor: '#2563eb'
+            };
+
+            if (type === 'line') {
+                shape = new fabric.Line([centerX - 60, centerY, centerX + 60, centerY], { ...commonProps, strokeWidth: Math.max(3, strokeWidth) });
+            } else if (type === 'rect') {
+                shape = new fabric.Rect({ ...commonProps, left: centerX - 50, top: centerY - 35, width: 100, height: 70 });
+            } else if (type === 'circle') {
+                shape = new fabric.Circle({ ...commonProps, left: centerX - 45, top: centerY - 45, radius: 45 });
+            } else if (type === 'triangle') {
+                shape = new fabric.Triangle({ ...commonProps, left: centerX - 45, top: centerY - 45, width: 90, height: 80 });
+            }
+
+            annotateState.fabricCanvas.add(shape);
+            annotateState.fabricCanvas.setActiveObject(shape);
+            annotateState.fabricCanvas.renderAll();
+        }
+
+        document.getElementById('btnShapeLine').onclick = () => addGeometricShape('line');
+        document.getElementById('btnShapeRect').onclick = () => addGeometricShape('rect');
+        document.getElementById('btnShapeCircle').onclick = () => addGeometricShape('circle');
+        document.getElementById('btnShapeTriangle').onclick = () => addGeometricShape('triangle');
+        
+        document.getElementById('btnDateStamp').onclick = () => {
+            setAnnTool('btnSelect', 'select'); annotateState.fabricCanvas.isDrawingMode = false;
+            const d = new Date();
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            const text = new fabric.Text(`Reviewed: ${dateStr}`, { 
+                left: annotateState.baseWidth - 260, top: 40, 
+                fill: '#dc2626', fontSize: 22, fontWeight: 'bold', fontFamily: 'Courier New', borderColor: '#dc2626'
+            });
+            annotateState.fabricCanvas.add(text); annotateState.fabricCanvas.setActiveObject(text);
+        };
+
+        const stampBtns = document.querySelectorAll('.stamp-btn');
+        
+        function exitStampMode() {
+            annotateState.activeStamp = null;
+            if (annotateState.currentTool === 'stamp') annotateState.currentTool = 'select';
+            stampBtns.forEach(b => b.classList.remove('active'));
+            uia.stampBanner.classList.add('hidden');
+            if (annotateState.fabricCanvas) annotateState.fabricCanvas.defaultCursor = 'default';
+        }
+
+        document.getElementById('btnExitStampMode').onclick = () => {
+            exitStampMode();
+            document.getElementById('btnSelect').click();
+        };
+
+        stampBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!annotateState.fabricCanvas) return;
+                const isAlreadyActive = btn.classList.contains('active');
+                annTools.forEach(t => { const el = document.getElementById(t); if(el) el.classList.remove('active'); });
+                stampBtns.forEach(b => b.classList.remove('active'));
+
+                if (isAlreadyActive) {
+                    exitStampMode();
+                    document.getElementById('btnSelect').click();
+                } else {
+                    btn.classList.add('active');
+                    annotateState.currentTool = 'stamp';
+                    annotateState.fabricCanvas.isDrawingMode = false;
+                    annotateState.fabricCanvas.selection = true;
+                    annotateState.fabricCanvas.defaultCursor = 'crosshair';
+                    annotateState.activeStamp = {
+                        text: btn.dataset.stamp, color: btn.dataset.color, isBox: btn.dataset.box === 'true'
+                    };
+                    uia.currentStampIcon.textContent = btn.dataset.stamp;
+                    uia.stampBanner.classList.remove('hidden');
+                }
+            });
+        });
+
+        function deleteSelectedObjects() {
+            if (!annotateState.fabricCanvas) return;
+            const activeObjs = annotateState.fabricCanvas.getActiveObjects();
+            if (activeObjs.length === 0) return;
+            if (activeObjs.length === 1 && activeObjs[0].isEditing) return;
+            activeObjs.forEach(obj => annotateState.fabricCanvas.remove(obj));
+            annotateState.fabricCanvas.discardActiveObject();
+            annotateState.fabricCanvas.renderAll();
+        }
+        document.getElementById('btnDeleteObj').onclick = deleteSelectedObjects;
+        window.addEventListener('keydown', (e) => {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && !views.annotate.classList.contains('hide')) {
+                deleteSelectedObjects();
+            }
+        });
+
+        document.getElementById('btnImage').onclick = () => document.getElementById('imageUpload').click();
+        document.getElementById('imageUpload').onchange = (e) => {
+            const f = e.target.files[0]; if(!f) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                fabric.Image.fromURL(ev.target.result, (img) => {
+                    setAnnTool('btnSelect', 'select'); annotateState.fabricCanvas.isDrawingMode = false;
+                    img.scaleToWidth(200); img.set({left: 100, top: 100});
+                    annotateState.fabricCanvas.add(img); annotateState.fabricCanvas.setActiveObject(img);
+                });
+            };
+            reader.readAsDataURL(f); e.target.value = '';
+        };
+
+        document.getElementById('btnRemoveBg').onclick = () => {
+            const activeObj = annotateState.fabricCanvas.getActiveObject();
+            if (!activeObj || activeObj.type !== 'image') return alert('請先在畫布上點選一張您插入的圖片（如簽名或印章）！');
+
+            const imgElement = activeObj.getElement();
+            const tempCanvas = document.createElement('canvas');
+            const ctx = tempCanvas.getContext('2d');
+            tempCanvas.width = imgElement.naturalWidth || imgElement.width;
+            tempCanvas.height = imgElement.naturalHeight || imgElement.height;
+            ctx.drawImage(imgElement, 0, 0);
+            
+            const imgData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imgData.data;
+            const tolDist = 8.0 * 2.55;
+            const smoothDist = 4.0 * 2.55;
+
+            for (let i = 0; i < data.length; i += 4) {
+                let r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+                if (a === 0) continue;
+                const dr = r - 255, dg = g - 255, db = b - 255;
+                const dist = Math.sqrt(0.299 * dr * dr + 0.587 * dg * dg + 0.114 * db * db);
+                
+                if (dist <= tolDist) {
+                    data[i + 3] = 0;
+                } else if (dist <= tolDist + smoothDist) {
+                    let t = (dist - tolDist) / smoothDist;
+                    let factor = t * t * (3 - 2 * t);
+                    data[i + 3] = Math.floor(a * factor);
+                    const safeAlpha = Math.max(factor, 0.15);
+                    data[i]   = Math.max(0, Math.min(255, Math.round((r - (1 - safeAlpha) * 255) / safeAlpha)));
+                    data[i+1] = Math.max(0, Math.min(255, Math.round((g - (1 - safeAlpha) * 255) / safeAlpha)));
+                    data[i+2] = Math.max(0, Math.min(255, Math.round((b - (1 - safeAlpha) * 255) / safeAlpha)));
+                }
+            }
+            ctx.putImageData(imgData, 0, 0);
+
+            const croppedCanvas = getTrimmedCanvas(tempCanvas);
+            replaceFabricImage(activeObj, croppedCanvas.toDataURL('image/png'));
+        };
+
+        document.getElementById('btnAutoCrop').onclick = () => {
+            const activeObj = annotateState.fabricCanvas.getActiveObject();
+            if (!activeObj || activeObj.type !== 'image') return alert('請先點選一張已去背的圖片！');
+
+            const imgElement = activeObj.getElement();
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = imgElement.naturalWidth || imgElement.width;
+            tempCanvas.height = imgElement.naturalHeight || imgElement.height;
+            tempCanvas.getContext('2d').drawImage(imgElement, 0, 0);
+
+            const croppedCanvas = getTrimmedCanvas(tempCanvas);
+            replaceFabricImage(activeObj, croppedCanvas.toDataURL('image/png'));
+        };
+
+        function replaceFabricImage(oldObj, newDataUrl) {
+            const targetWidth = oldObj.getScaledWidth();
+            fabric.Image.fromURL(newDataUrl, (newImg) => {
+                newImg.scaleToWidth(Math.min(targetWidth, 220));
+                newImg.set({ left: oldObj.left, top: oldObj.top, angle: oldObj.angle });
+                annotateState.fabricCanvas.remove(oldObj);
+                annotateState.fabricCanvas.add(newImg);
+                annotateState.fabricCanvas.setActiveObject(newImg);
+                annotateState.fabricCanvas.renderAll();
+                saveStateToUndo();
+            });
+        }
+
+        // 匯出批改後 PDF (確保不受當前 Zoom 縮放影響，精準對齊 100% 原始尺寸)
+        document.getElementById('btnExportAnnotated').addEventListener('click', async () => {
+            if (!annotateState.pdfDocLib) return;
+            exitStampMode();
+            annotateState.pageAnnotations[annotateState.pageNum] = annotateState.fabricCanvas.toJSON(); 
+            const btn = document.getElementById('btnExportAnnotated');
+            const originalHTML = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 處理中...';
+            try {
+                const tempCanvas = document.createElement('canvas');
+                const exCanvas = new fabric.StaticCanvas(tempCanvas);
+                const pages = annotateState.pdfDocLib.getPages();
+                for (let i = 0; i < pages.length; i++) {
+                    const pdfPage = pages[i];
+                    if (annotateState.pageAnnotations[i+1]) {
+                        const { width, height } = pdfPage.getSize();
+                        const jsPage = await annotateState.pdfDocJS.getPage(i + 1);
+                        const baseVp = jsPage.getViewport({ scale: BASE_ANNOTATE_SCALE });
+                        
+                        await new Promise(r => exCanvas.loadFromJSON(annotateState.pageAnnotations[i+1], r));
+                        exCanvas.setZoom(1.0); // 匯出時強制重設為 1.0 標準比例
+                        exCanvas.setWidth(baseVp.width); 
+                        exCanvas.setHeight(baseVp.height); 
+                        exCanvas.renderAll();
+                        
+                        const pngImage = await annotateState.pdfDocLib.embedPng(exCanvas.toDataURL({format: 'png', multiplier: 2}));
+                        pdfPage.drawImage(pngImage, { x: 0, y: 0, width: width, height: height });
+                    }
+                }
+                downloadFile(await annotateState.pdfDocLib.save(), `批改完成_${Date.now()}.pdf`, "application/pdf");
+            } catch (err) { alert('匯出失敗：' + err.message); } finally { btn.innerHTML = originalHTML; }
+        });
+
+
+        // ==========================================
+        // 模組 3：圖片去背(BETA) - 含像素級放大檢視 (50% ~ 400%)
+        // ==========================================
+        const bgUI = {
+            uploadArea: document.getElementById('uploadAreaBg'),
+            input: document.getElementById('bgImageInput'),
+            previewContainer: document.getElementById('bgPreviewContainer'),
+            canvasWrapper: document.getElementById('bgCanvasWrapper'),
+            canvas: document.getElementById('bgCanvas'),
+            btnModeGlobal: document.getElementById('btnModeGlobal'),
+            btnModeFlood: document.getElementById('btnModeFlood'),
+            tolerance: document.getElementById('bgTolerance'),
+            smoothing: document.getElementById('bgSmoothing'),
+            defringe: document.getElementById('bgDefringe'),
+            valTolerance: document.getElementById('valTolerance'),
+            valSmoothing: document.getElementById('valSmoothing'),
+            valDefringe: document.getElementById('valDefringe'),
+            btnTolMinus: document.getElementById('btnTolMinus'),
+            btnTolPlus: document.getElementById('btnTolPlus'),
+            btnSmoothMinus: document.getElementById('btnSmoothMinus'),
+            btnSmoothPlus: document.getElementById('btnSmoothPlus'),
+            chkEnhance: document.getElementById('chkEnhanceText'),
+            chkAutoCrop: document.getElementById('chkAutoCropBg'),
+            btnTargetWhite: document.getElementById('btnTargetWhite'),
+            btnEyedropper: document.getElementById('btnEyedropper'),
+            pickedColorInfo: document.getElementById('pickedColorInfo'),
+            colorPreviewBox: document.getElementById('colorPreviewBox'),
+            colorRgbText: document.getElementById('colorRgbText'),
+            eyedropperHint: document.getElementById('eyedropperHint'),
+            btnDownload: document.getElementById('btnDownloadPng'),
+            btnSendToAnnotate: document.getElementById('btnSendToAnnotate'),
+            btnReset: document.getElementById('btnResetBgImage'),
+            zoomVal: document.getElementById('bgZoomVal')
+        };
+
+        let originalBgImageData = null;
+        let targetColor = { r: 255, g: 255, b: 255 };
+        let isEyedropperMode = false;
+        let bgRemovalMode = 'global';
+        let floodSeedPoints = [];
+        let bgPreviewZoom = 1.0; // 去背預覽放大倍率 (0.5 ~ 4.0)
+
+        function applyBgPreviewZoom(newZoom, fitMode = false) {
+            if (!bgUI.canvas.width) return;
+            if (fitMode) {
+                bgPreviewZoom = 1.0;
+                bgUI.canvas.style.width = '';
+                bgUI.canvas.style.height = '';
+                bgUI.canvas.classList.add('max-w-full', 'h-auto');
+                bgUI.zoomVal.textContent = '適應';
+            } else {
+                bgPreviewZoom = Math.max(0.5, Math.min(4.0, newZoom));
+                bgUI.canvas.classList.remove('max-w-full', 'h-auto');
+                bgUI.canvas.style.width = `${Math.round(bgUI.canvas.width * bgPreviewZoom)}px`;
+                bgUI.canvas.style.height = `${Math.round(bgUI.canvas.height * bgPreviewZoom)}px`;
+                bgUI.zoomVal.textContent = `${Math.round(bgPreviewZoom * 100)}%`;
+            }
+        }
+
+        document.getElementById('btnBgZoomIn').onclick = () => applyBgPreviewZoom(bgPreviewZoom + 0.25);
+        document.getElementById('btnBgZoomOut').onclick = () => applyBgPreviewZoom(bgPreviewZoom - 0.25);
+        document.getElementById('btnBgZoomReset').onclick = () => applyBgPreviewZoom(1.0, true);
+
+        document.querySelectorAll('.preview-bg-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                bgUI.canvasWrapper.classList.remove('bg-checkerboard', 'bg-dark-preview', 'bg-paper-preview', 'bg-white-preview');
+                bgUI.canvasWrapper.classList.add(btn.dataset.bg);
+                document.querySelectorAll('.preview-bg-btn').forEach(b => b.classList.remove('ring-2', 'ring-purple-500'));
+                btn.classList.add('ring-2', 'ring-purple-500');
+            });
+        });
+
+        bgUI.btnModeGlobal.addEventListener('click', () => {
+            bgRemovalMode = 'global';
+            bgUI.btnModeGlobal.className = "py-1.5 px-2 bg-white shadow text-purple-700 rounded-lg text-xs font-bold transition";
+            bgUI.btnModeFlood.className = "py-1.5 px-2 text-gray-600 hover:bg-gray-200 rounded-lg text-xs font-bold transition";
+            processBgRemoval();
+        });
+
+        bgUI.btnModeFlood.addEventListener('click', () => {
+            bgRemovalMode = 'flood';
+            bgUI.btnModeFlood.className = "py-1.5 px-2 bg-white shadow text-purple-700 rounded-lg text-xs font-bold transition";
+            bgUI.btnModeGlobal.className = "py-1.5 px-2 text-gray-600 hover:bg-gray-200 rounded-lg text-xs font-bold transition";
+            processBgRemoval();
+        });
+
+        bgUI.uploadArea.addEventListener('click', () => bgUI.input.click());
+        bgUI.input.addEventListener('change', (e) => loadBgImage(e.target.files[0]));
+        bgUI.uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); bgUI.uploadArea.classList.add('border-purple-600', 'bg-purple-50/50'); });
+        bgUI.uploadArea.addEventListener('dragleave', (e) => { e.preventDefault(); bgUI.uploadArea.classList.remove('border-purple-600', 'bg-purple-50/50'); });
+        bgUI.uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault(); bgUI.uploadArea.classList.remove('border-purple-600', 'bg-purple-50/50');
+            if (e.dataTransfer.files.length > 0) loadBgImage(e.dataTransfer.files[0]);
+        });
+
+        bgUI.btnReset.addEventListener('click', () => {
+            bgUI.previewContainer.classList.add('hidden');
+            bgUI.uploadArea.classList.remove('hidden');
+            bgUI.btnDownload.disabled = true;
+            bgUI.btnSendToAnnotate.disabled = true;
+            bgUI.btnReset.disabled = true;
+            originalBgImageData = null;
+            floodSeedPoints = [];
+            bgUI.input.value = '';
+        });
+
+        function loadBgImage(file) {
+            if (!file || !file.type.startsWith('image/')) return alert('請上傳圖片檔案！');
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    bgUI.canvas.width = img.naturalWidth || img.width;
+                    bgUI.canvas.height = img.naturalHeight || img.height;
+                    const ctx = bgUI.canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    originalBgImageData = ctx.getImageData(0, 0, bgUI.canvas.width, bgUI.canvas.height);
+                    floodSeedPoints = [];
+                    
+                    bgUI.uploadArea.classList.add('hidden');
+                    bgUI.previewContainer.classList.remove('hidden');
+                    bgUI.previewContainer.classList.add('flex');
+                    bgUI.btnDownload.disabled = false;
+                    bgUI.btnSendToAnnotate.disabled = false;
+                    bgUI.btnReset.disabled = false;
+
+                    applyBgPreviewZoom(1.0, true);
+                    processBgRemoval();
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function calcPerceptualColorDist(r, g, b, tr, tg, tb) {
+            const dr = r - tr, dg = g - tg, db = b - tb;
+            return Math.sqrt(0.299 * dr * dr + 0.587 * dg * dg + 0.114 * db * db);
+        }
+
+        function processBgRemoval() {
+            if (!originalBgImageData) return;
+
+            const width = originalBgImageData.width;
+            const height = originalBgImageData.height;
+            const totalPixels = width * height;
+            
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            const currentData = tempCtx.createImageData(width, height);
+            const src = originalBgImageData.data;
+            const dst = currentData.data;
+
+            const tol = parseFloat(bgUI.tolerance.value);
+            const smooth = parseFloat(bgUI.smoothing.value);
+            const defringeStrength = parseInt(bgUI.defringe.value, 10) / 100;
+            const enhance = bgUI.chkEnhance.checked;
+
+            const thresholdDist = tol * 2.55;
+            const smoothDist = smooth * 2.55;
+            const maxMatchDist = thresholdDist + smoothDist;
+
+            const distMap = new Float32Array(totalPixels);
+            for (let p = 0, i = 0; p < totalPixels; p++, i += 4) {
+                distMap[p] = calcPerceptualColorDist(src[i], src[i+1], src[i+2], targetColor.r, targetColor.g, targetColor.b);
+            }
+
+            let isConnectedBg = null;
+            if (bgRemovalMode === 'flood') {
+                isConnectedBg = new Uint8Array(totalPixels);
+                const queue = new Int32Array(totalPixels);
+                let head = 0, tail = 0;
+
+                const tryEnqueue = (x, y) => {
+                    const idx = y * width + x;
+                    if (isConnectedBg[idx] === 0 && distMap[idx] <= maxMatchDist) {
+                        isConnectedBg[idx] = 1;
+                        queue[tail++] = idx;
+                    }
+                };
+
+                for (let x = 0; x < width; x++) { tryEnqueue(x, 0); tryEnqueue(x, height - 1); }
+                for (let y = 1; y < height - 1; y++) { tryEnqueue(0, y); tryEnqueue(width - 1, y); }
+                for (let pt of floodSeedPoints) {
+                    if (pt.x >= 0 && pt.x < width && pt.y >= 0 && pt.y < height) tryEnqueue(pt.x, pt.y);
+                }
+
+                while (head < tail) {
+                    const curr = queue[head++];
+                    const cx = curr % width;
+                    const cy = (curr / width) | 0;
+                    if (distMap[curr] <= thresholdDist + smoothDist * 0.6) {
+                        if (cx > 0) tryEnqueue(cx - 1, cy);
+                        if (cx < width - 1) tryEnqueue(cx + 1, cy);
+                        if (cy > 0) tryEnqueue(cx, cy - 1);
+                        if (cy < height - 1) tryEnqueue(cx, cy + 1);
+                    }
+                }
+            }
+
+            for (let p = 0, i = 0; p < totalPixels; p++, i += 4) {
+                let r = src[i], g = src[i + 1], b = src[i + 2], a = src[i + 3];
+
+                if (a === 0) { dst[i + 3] = 0; continue; }
+
+                if (bgRemovalMode === 'flood' && isConnectedBg[p] === 0) {
+                    dst[i] = r; dst[i + 1] = g; dst[i + 2] = b; dst[i + 3] = a;
+                    continue;
+                }
+
+                const distance = distMap[p];
+                let alphaFactor = 1.0;
+
+                if (distance <= thresholdDist) {
+                    alphaFactor = 0.0;
+                } else if (smoothDist > 0 && distance < maxMatchDist) {
+                    let t = (distance - thresholdDist) / smoothDist;
+                    alphaFactor = t * t * (3 - 2 * t);
+                }
+
+                let newAlpha = Math.round(a * alphaFactor);
+
+                if (newAlpha > 0) {
+                    if (alphaFactor < 0.98 && defringeStrength > 0) {
+                        const effectiveAlpha = Math.max(alphaFactor, 0.15);
+                        const pureR = (r - (1 - effectiveAlpha) * targetColor.r) / effectiveAlpha;
+                        const pureG = (g - (1 - effectiveAlpha) * targetColor.g) / effectiveAlpha;
+                        const pureB = (b - (1 - effectiveAlpha) * targetColor.b) / effectiveAlpha;
+
+                        r = Math.round(r * (1 - defringeStrength) + Math.max(0, Math.min(255, pureR)) * defringeStrength);
+                        g = Math.round(g * (1 - defringeStrength) + Math.max(0, Math.min(255, pureG)) * defringeStrength);
+                        b = Math.round(b * (1 - defringeStrength) + Math.max(0, Math.min(255, pureB)) * defringeStrength);
+                    }
+
+                    if (enhance) {
+                        r = Math.max(0, Math.floor(r * 0.82));
+                        g = Math.max(0, Math.floor(g * 0.82));
+                        b = Math.max(0, Math.floor(b * 0.82));
+                        newAlpha = Math.min(255, Math.round(newAlpha * 1.15));
+                    }
+                }
+
+                dst[i] = r; dst[i + 1] = g; dst[i + 2] = b; dst[i + 3] = newAlpha;
+            }
+
+            tempCtx.putImageData(currentData, 0, 0);
+
+            let finalCanvas = tempCanvas;
+            if (bgUI.chkAutoCrop.checked && !isEyedropperMode) {
+                finalCanvas = getTrimmedCanvas(tempCanvas);
+            }
+
+            bgUI.canvas.width = finalCanvas.width;
+            bgUI.canvas.height = finalCanvas.height;
+            bgUI.canvas.getContext('2d').drawImage(finalCanvas, 0, 0);
+
+            // 若目前處於手動放大檢視狀態，同步更新 CSS 寬高
+            if (bgUI.zoomVal.textContent !== '適應') {
+                applyBgPreviewZoom(bgPreviewZoom, false);
+            }
+        }
+
+        function updateTolerance(val) {
+            const clamped = Math.max(0, Math.min(25, parseFloat(val))).toFixed(1);
+            bgUI.tolerance.value = clamped;
+            bgUI.valTolerance.textContent = clamped;
+            processBgRemoval();
+        }
+
+        function updateSmoothing(val) {
+            const clamped = Math.max(0, Math.min(15, parseFloat(val))).toFixed(1);
+            bgUI.smoothing.value = clamped;
+            bgUI.valSmoothing.textContent = clamped;
+            processBgRemoval();
+        }
+
+        bgUI.tolerance.addEventListener('input', (e) => updateTolerance(e.target.value));
+        bgUI.btnTolMinus.addEventListener('click', () => updateTolerance(parseFloat(bgUI.tolerance.value) - 0.5));
+        bgUI.btnTolPlus.addEventListener('click', () => updateTolerance(parseFloat(bgUI.tolerance.value) + 0.5));
+
+        bgUI.smoothing.addEventListener('input', (e) => updateSmoothing(e.target.value));
+        bgUI.btnSmoothMinus.addEventListener('click', () => updateSmoothing(parseFloat(bgUI.smoothing.value) - 0.5));
+        bgUI.btnSmoothPlus.addEventListener('click', () => updateSmoothing(parseFloat(bgUI.smoothing.value) + 0.5));
+
+        bgUI.defringe.addEventListener('input', (e) => {
+            bgUI.valDefringe.textContent = `${e.target.value}%`;
+            processBgRemoval();
+        });
+
+        bgUI.chkEnhance.addEventListener('change', processBgRemoval);
+        bgUI.chkAutoCrop.addEventListener('change', processBgRemoval);
+
+        bgUI.btnTargetWhite.addEventListener('click', () => {
+            isEyedropperMode = false;
+            bgUI.canvas.classList.remove('cursor-eyedropper');
+            bgUI.eyedropperHint.classList.add('hidden');
+            
+            targetColor = { r: 255, g: 255, b: 255 };
+            floodSeedPoints = [];
+            bgUI.pickedColorInfo.classList.add('hidden');
+            
+            bgUI.btnTargetWhite.classList.replace('bg-gray-100', 'bg-purple-100');
+            bgUI.btnTargetWhite.classList.replace('text-gray-700', 'text-purple-700');
+            bgUI.btnTargetWhite.classList.replace('border-gray-300', 'border-purple-300');
+            
+            bgUI.btnEyedropper.classList.replace('bg-purple-100', 'bg-gray-100');
+            bgUI.btnEyedropper.classList.replace('text-purple-700', 'text-gray-700');
+            bgUI.btnEyedropper.classList.replace('border-purple-300', 'border-gray-300');
+
+            processBgRemoval();
+        });
+
+        bgUI.btnEyedropper.addEventListener('click', () => {
+            if (!originalBgImageData) return alert('請先上傳圖片！');
+            isEyedropperMode = true;
+            bgUI.canvas.classList.add('cursor-eyedropper');
+            bgUI.eyedropperHint.classList.remove('hidden');
+
+            bgUI.btnEyedropper.classList.replace('bg-gray-100', 'bg-purple-100');
+            bgUI.btnEyedropper.classList.replace('text-gray-700', 'text-purple-700');
+            bgUI.btnEyedropper.classList.replace('border-gray-300', 'border-purple-300');
+
+            bgUI.btnTargetWhite.classList.replace('bg-purple-100', 'bg-gray-100');
+            bgUI.btnTargetWhite.classList.replace('text-purple-700', 'text-gray-700');
+            bgUI.btnTargetWhite.classList.replace('border-purple-300', 'border-gray-300');
+
+            bgUI.canvas.width = originalBgImageData.width;
+            bgUI.canvas.height = originalBgImageData.height;
+            bgUI.canvas.getContext('2d').putImageData(originalBgImageData, 0, 0);
+            if (bgUI.zoomVal.textContent !== '適應') applyBgPreviewZoom(bgPreviewZoom, false);
+        });
+
+        bgUI.canvas.addEventListener('click', (e) => {
+            if (!isEyedropperMode || !originalBgImageData) return;
+
+            const rect = bgUI.canvas.getBoundingClientRect();
+            const scaleX = bgUI.canvas.width / rect.width;
+            const scaleY = bgUI.canvas.height / rect.height;
+
+            const x = Math.floor((e.clientX - rect.left) * scaleX);
+            const y = Math.floor((e.clientY - rect.top) * scaleY);
+
+            const pixelIndex = (y * originalBgImageData.width + x) * 4;
+            targetColor = {
+                r: originalBgImageData.data[pixelIndex],
+                g: originalBgImageData.data[pixelIndex + 1],
+                b: originalBgImageData.data[pixelIndex + 2]
+            };
+            floodSeedPoints.push({ x, y });
+
+            isEyedropperMode = false;
+            bgUI.canvas.classList.remove('cursor-eyedropper');
+            bgUI.eyedropperHint.classList.add('hidden');
+            
+            bgUI.pickedColorInfo.classList.remove('hidden');
+            bgUI.colorPreviewBox.style.backgroundColor = `rgb(${targetColor.r}, ${targetColor.g}, ${targetColor.b})`;
+            bgUI.colorRgbText.textContent = `RGB(${targetColor.r}, ${targetColor.g}, ${targetColor.b})`;
+
+            processBgRemoval();
+        });
+
+        bgUI.btnDownload.addEventListener('click', () => {
+            if (!originalBgImageData) return;
+            const dataUrl = bgUI.canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `透明去背裁邊_${Date.now()}.png`;
+            link.click();
+        });
+
+        bgUI.btnSendToAnnotate.addEventListener('click', () => {
+            if (!originalBgImageData) return;
+            if (!annotateState.fabricCanvas) {
+                return alert('請先在「批改及簽署」分頁載入一份 PDF 作業，才能將圖片傳送過去喔！');
+            }
+            const dataUrl = bgUI.canvas.toDataURL('image/png');
+            fabric.Image.fromURL(dataUrl, (img) => {
+                switchTab('annotate');
+                setAnnTool('btnSelect', 'select');
+                annotateState.fabricCanvas.isDrawingMode = false;
+                img.scaleToWidth(Math.min(img.width, 180));
+                img.set({ left: 120, top: 120 });
+                annotateState.fabricCanvas.add(img);
+                annotateState.fabricCanvas.setActiveObject(img);
+                annotateState.fabricCanvas.renderAll();
+                saveStateToUndo();
+            });
+        });
+
+
+        // ==========================================
+        // 模組 4：無廣告 YouTube 播放器邏輯
+        // ==========================================
+        const ytState = {
+            currentVideoId: null,
+            engine: 'nocookie', // 'nocookie' 或 'invidious'
+            playlist: JSON.parse(localStorage.getItem('edu_yt_playlist') || '[]')
+        };
+
+        const ytUI = {
+            input: document.getElementById('ytUrlInput'),
+            btnLoad: document.getElementById('btnLoadYt'),
+            btnAdd: document.getElementById('btnAddToPlaylist'),
+            iframe: document.getElementById('ytIframe'),
+            empty: document.getElementById('ytEmptyState'),
+            chkLoop: document.getElementById('chkYtLoop'),
+            btnDim: document.getElementById('btnCinemaDim'),
+            playlistContainer: document.getElementById('ytPlaylistContainer'),
+            playlistCount: document.getElementById('ytPlaylistCount')
+        };
+
+        // 智慧解析各種 YouTube 網址格式 (watch?v=, youtu.be/, shorts/, embed/)
+        function extractYouTubeId(urlStr) {
+            if (!urlStr) return null;
+            const clean = urlStr.trim();
+            if (/^[a-zA-Z0-9_-]{11}$/.test(clean)) return clean;
+            const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+            const match = clean.match(regExp);
+            return match ? match[1] : null;
+        }
+
+        function buildYouTubeEmbedUrl(videoId) {
+            const isLoop = ytState.chkLoop ? 1 : 0;
+            const loopParams = isLoop ? `&loop=1&playlist=${videoId}` : '';
+            if (ytState.engine === 'invidious') {
+                // 使用開源無廣告 Invidious 嵌入線路
+                return `https://inv.tux.pizza/embed/${videoId}?autoplay=1&rel=0${loopParams}`;
+            }
+            // 預設：官方 youtube-nocookie 教育無追蹤線路
+            return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3${loopParams}`;
+        }
+
+        function loadYouTubeVideo(videoId) {
+            if (!videoId) return alert('無法識別此 YouTube 網址，請確認連結是否正確！');
+            ytState.currentVideoId = videoId;
+            ytState.chkLoop = ytUI.chkLoop.checked;
+            ytUI.empty.classList.add('hidden');
+            ytUI.iframe.classList.remove('hidden');
+            ytUI.iframe.src = buildYouTubeEmbedUrl(videoId);
+        }
+
+        ytUI.btnLoad.addEventListener('click', () => {
+            const vid = extractYouTubeId(ytUI.input.value);
+            loadYouTubeVideo(vid);
+        });
+
+        ytUI.input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') ytUI.btnLoad.click();
+        });
+
+        ytUI.chkLoop.addEventListener('change', () => {
+            if (ytState.currentVideoId) loadYouTubeVideo(ytState.currentVideoId);
+        });
+
+        // 切換播放線路
+        document.querySelectorAll('.yt-engine-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                ytState.engine = btn.dataset.engine;
+                document.querySelectorAll('.yt-engine-btn').forEach(b => {
+                    b.className = "yt-engine-btn px-3 py-1 rounded-full font-bold bg-white text-gray-600 border hover:bg-gray-100 transition";
+                });
+                btn.className = "yt-engine-btn px-3 py-1 rounded-full font-bold bg-red-600 text-white shadow-sm transition";
+                if (ytState.currentVideoId) loadYouTubeVideo(ytState.currentVideoId);
+            });
+        });
+
+        // 關燈專注模式 (Cinema Dimmer)
+        ytUI.btnDim.addEventListener('click', () => {
+            views.youtube.classList.toggle('cinema-dim-active');
+            const isDim = views.youtube.classList.contains('cinema-dim-active');
+            ytUI.btnDim.innerHTML = isDim 
+                ? '<i class="fa-solid fa-sun mr-1.5 text-yellow-300"></i> 開燈恢復' 
+                : '<i class="fa-solid fa-lightbulb mr-1.5"></i> 關燈專注模式';
+        });
+
+        // 課堂播放清單管理
+        function renderYtPlaylist() {
+            ytUI.playlistContainer.innerHTML = '';
+            ytUI.playlistCount.textContent = ytState.playlist.length;
+
+            if (ytState.playlist.length === 0) {
+                ytUI.playlistContainer.innerHTML = `
+                    <div class="text-center py-10 text-gray-300 text-xs">
+                        <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
+                        尚無收藏影片
+                    </div>`;
+                return;
+            }
+
+            ytState.playlist.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = "group flex items-center space-x-2.5 p-2 rounded-xl border hover:border-red-300 hover:bg-red-50/40 cursor-pointer transition bg-white shadow-2xs";
+                card.innerHTML = `
+                    <img src="https://img.youtube.com/vi/${item.id}/mqdefault.jpg" class="w-20 h-12 object-cover rounded-lg border shrink-0">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-bold text-gray-700 truncate group-hover:text-red-600">${item.title}</div>
+                        <div class="text-[10px] text-gray-400 font-mono">${item.id}</div>
+                    </div>
+                    <button class="btn-del-yt text-gray-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition" title="移除">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                `;
+                card.addEventListener('click', (e) => {
+                    if (e.target.closest('.btn-del-yt')) return;
+                    ytUI.input.value = `https://www.youtube.com/watch?v=${item.id}`;
+                    loadYouTubeVideo(item.id);
+                });
+                card.querySelector('.btn-del-yt').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    ytState.playlist.splice(index, 1);
+                    localStorage.setItem('edu_yt_playlist', JSON.stringify(ytState.playlist));
+                    renderYtPlaylist();
+                });
+                ytUI.playlistContainer.appendChild(card);
+            });
+        }
+
+        ytUI.btnAdd.addEventListener('click', () => {
+            const vid = extractYouTubeId(ytUI.input.value) || ytState.currentVideoId;
+            if (!vid) return alert('請先在輸入框貼上有效的 YouTube 網址！');
+            if (ytState.playlist.some(x => x.id === vid)) return alert('此影片已在課堂清單中！');
+
+            const customTitle = prompt('請為這部課堂影片輸入備註名稱：', `課堂教材影片 (${ytState.playlist.length + 1})`);
+            if (customTitle === null) return;
+
+            ytState.playlist.unshift({
+                id: vid,
+                title: customTitle.trim() || `影片 ${vid}`
+            });
+            localStorage.setItem('edu_yt_playlist', JSON.stringify(ytState.playlist));
+            renderYtPlaylist();
+        });
+
+        renderYtPlaylist();
+
+        // 通用下載函式
+        function downloadFile(bytes, filename, mimeType) {
+            const blob = new Blob([bytes], { type: mimeType });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+    </script>
+</body>
+</html>
