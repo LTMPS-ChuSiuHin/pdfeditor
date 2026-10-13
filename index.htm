@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全能 PDF 與教學工具箱 (極致美學與多媒體版)</title>
+    <title>全能 PDF 與教學工具箱 (專業多媒體版)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -16,10 +16,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <!-- Sortable.js for drag and drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <!-- lamejs for MP3 Encoding -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+    <!-- FFmpeg.wasm for Video processing -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- YouTube IFrame API -->
-    <script src="https://www.youtube.com/iframe_api"></script>
     
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -96,11 +98,6 @@
             background-size: 100% 28px;
         }
 
-        .cinema-dim-active {
-            background-color: #090d16 !important;
-            color: #f8fafc !important;
-        }
-
         .cursor-eyedropper { cursor: crosshair !important; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -124,19 +121,22 @@
             </div>
         </div>
         
-        <!-- 四大分頁導航 -->
+        <!-- 分頁導航 -->
         <div class="flex flex-wrap gap-1.5 bg-gray-100/90 p-1.5 rounded-xl border border-gray-200/60">
             <button id="tabBtnOrganize" class="px-3.5 py-2 rounded-lg text-sm font-bold bg-white shadow-sm text-blue-600 transition-all flex items-center">
-                <i class="fa-solid fa-layer-group mr-1.5"></i> 頁面管理 (合併/分拆)
+                <i class="fa-solid fa-layer-group mr-1.5"></i> 頁面管理
             </button>
             <button id="tabBtnAnnotate" class="px-3.5 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-white/60 transition-all flex items-center">
                 <i class="fa-solid fa-pen-nib mr-1.5 text-indigo-500"></i> 批改及簽署
             </button>
             <button id="tabBtnBgRemover" class="px-3.5 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-white/60 transition-all flex items-center">
-                <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-purple-600"></i> 圖片去背(BETA)
+                <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-purple-600"></i> 圖片去背
             </button>
-            <button id="tabBtnYoutube" class="px-3.5 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-white/60 transition-all flex items-center">
-                <i class="fa-brands fa-youtube mr-1.5 text-red-600"></i> 無廣告 YouTube 播放器
+            <button id="tabBtnAudio" class="px-3.5 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-white/60 transition-all flex items-center">
+                <i class="fa-solid fa-file-audio mr-1.5 text-teal-600"></i> 音訊轉換
+            </button>
+            <button id="tabBtnVideo" class="px-3.5 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-white/60 transition-all flex items-center">
+                <i class="fa-solid fa-film mr-1.5 text-cyan-600"></i> 視訊轉換
             </button>
         </div>
     </header>
@@ -145,7 +145,7 @@
     <main class="flex-1 overflow-hidden relative">
         
         <!-- ========================================== -->
-        <!-- 模組 1：頁面管理 (Organize - 合併/分拆/刪除/放大檢視) -->
+        <!-- 模組 1：頁面管理 (Organize) -->
         <!-- ========================================== -->
         <section id="viewOrganize" class="view-animate absolute inset-0 flex flex-col h-full">
             <div class="px-6 py-3.5 bg-white/90 border-b flex flex-wrap justify-between items-center shadow-sm z-10 gap-2">
@@ -184,13 +184,11 @@
         </section>
 
         <!-- ========================================== -->
-        <!-- 模組 2：批改及簽署 (Annotate - 含無損放大縮小) -->
+        <!-- 模組 2：批改及簽署 (Annotate) -->
         <!-- ========================================== -->
         <section id="viewAnnotate" class="view-animate absolute inset-0 flex h-full hide">
             
-            <!-- 左側工具列 -->
             <aside class="w-28 bg-white border-r flex flex-col items-center py-3 px-2 space-y-3 shrink-0 shadow-lg z-10 overflow-y-auto">
-                
                 <div class="w-full flex flex-col items-center bg-slate-50 p-2 rounded-xl border border-slate-200/80">
                     <div class="flex items-center space-x-2 mb-2">
                         <input type="color" id="colorPicker" value="#ef4444" class="w-7 h-7 rounded-lg cursor-pointer border-0 p-0 shadow-sm" title="選擇顏色">
@@ -249,7 +247,6 @@
                 </div>
             </aside>
 
-            <!-- 中間畫布區 -->
             <div class="flex-1 overflow-auto p-6 flex flex-col items-center relative" id="annotateWorkspace">
                 <div id="stampModeBanner" class="hidden sticky top-0 z-30 mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2 rounded-full shadow-lg flex items-center space-x-3 text-sm font-bold animate-bounce">
                     <span><i class="fa-solid fa-stamp mr-1"></i> 連續蓋章模式：請直接在作業上點擊蓋下「<span id="currentStampIcon">✔</span>」</span>
@@ -261,7 +258,7 @@
                         <i class="fa-solid fa-file-signature text-4xl"></i>
                     </div>
                     <h2 class="text-2xl font-bold text-gray-700">點擊或拖曳一份 PDF 至此進行批改</h2>
-                    <p class="text-gray-400 mt-2 text-sm">支援無損放大縮小檢視、快速圖章 (✔/✖)、螢光筆、幾何圖形與簽名去背</p>
+                    <p class="text-gray-400 mt-2 text-sm">支援無損放大縮小檢視、快速圖章、幾何圖形與簽名去背</p>
                     <input type="file" id="pdfUploadAnnotate" accept="application/pdf" class="hidden">
                 </div>
 
@@ -273,9 +270,7 @@
                 </div>
             </div>
 
-            <!-- 右側面板 -->
             <aside id="rightPanelAnnotate" class="w-64 bg-white border-l p-4 flex flex-col hidden shadow-lg z-10 overflow-y-auto">
-                
                 <div class="mb-5">
                     <h3 class="font-bold text-xs text-gray-500 uppercase tracking-wider mb-2"><i class="fa-solid fa-magnifying-glass mr-1 text-blue-500"></i> 畫面縮放檢視</h3>
                     <div class="flex items-center justify-between bg-slate-100 p-1.5 rounded-xl border">
@@ -298,14 +293,14 @@
                         <span class="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-medium">點選後點畫面</span>
                     </div>
                     <div class="grid grid-cols-4 gap-2 mb-3">
-                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50 font-bold text-red-600" data-stamp="✔" data-color="#dc2626" title="答對 (紅勾)">✔</button>
-                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50 font-bold text-red-600" data-stamp="✖" data-color="#dc2626" title="答錯 (紅叉)">✖</button>
-                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50 font-bold text-orange-500" data-stamp="△" data-color="#f97316" title="部分正確 (三角)">△</button>
-                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50 font-bold text-purple-600" data-stamp="❓" data-color="#9333ea" title="疑問 / 不清楚">❓</button>
-                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50" data-stamp="⭐" data-color="#eab308" title="星星獎勵">⭐</button>
+                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50 font-bold text-red-600" data-stamp="✔" data-color="#dc2626" title="答對">✔</button>
+                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50 font-bold text-red-600" data-stamp="✖" data-color="#dc2626" title="答錯">✖</button>
+                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50 font-bold text-orange-500" data-stamp="△" data-color="#f97316" title="部分正確">△</button>
+                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50 font-bold text-purple-600" data-stamp="❓" data-color="#9333ea" title="疑問">❓</button>
+                        <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50" data-stamp="⭐" data-color="#eab308" title="星星">⭐</button>
                         <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50" data-stamp="💯" data-color="#dc2626" title="一百分">💯</button>
                         <button class="stamp-btn border rounded-xl p-2 text-xl flex items-center justify-center hover:bg-gray-50" data-stamp="👍" data-color="#2563eb" title="讚！">👍</button>
-                        <button class="stamp-btn border rounded-xl p-2 text-xs flex items-center justify-center hover:bg-gray-50 font-bold text-blue-600" data-stamp="閱" data-color="#2563eb" data-box="true" title="「閱」字方章">閱</button>
+                        <button class="stamp-btn border rounded-xl p-2 text-xs flex items-center justify-center hover:bg-gray-50 font-bold text-blue-600" data-stamp="閱" data-color="#2563eb" data-box="true">閱</button>
                     </div>
                     <div class="flex items-center justify-between text-xs text-gray-500 bg-slate-50 p-2 rounded-lg border">
                         <span>圖章大小：</span>
@@ -325,10 +320,9 @@
         </section>
 
         <!-- ========================================== -->
-        <!-- 模組 3：圖片去背(BETA) - 含像素級放大檢視    -->
+        <!-- 模組 3：圖片去背(BETA) -->
         <!-- ========================================== -->
-        <section id="viewBgRemover" class="view-animate absolute inset-0 flex h-full hide">
-            
+        <section id="viewBgRemover" class="view-animate absolute inset-0 flex h-full hide bg-gray-100">
             <aside class="w-80 bg-white border-r p-5 flex flex-col shadow-lg z-10 overflow-y-auto">
                 <h2 class="text-lg font-bold text-purple-700 mb-3 flex items-center border-b pb-2">
                     <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> 圖片去背(BETA)
@@ -337,10 +331,10 @@
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-gray-700 mb-1.5">1. 去背範圍模式</label>
                     <div class="grid grid-cols-2 gap-1.5 bg-gray-100 p-1 rounded-xl">
-                        <button id="btnModeGlobal" class="py-1.5 px-2 bg-white shadow text-purple-700 rounded-lg text-xs font-bold transition" title="連字跡孔洞內的背景一併去除，最適合簽名與印章">
+                        <button id="btnModeGlobal" class="py-1.5 px-2 bg-white shadow text-purple-700 rounded-lg text-xs font-bold transition">
                             <i class="fa-solid fa-signature mr-1"></i>簽名/印章(全局)
                         </button>
-                        <button id="btnModeFlood" class="py-1.5 px-2 text-gray-600 hover:bg-gray-200 rounded-lg text-xs font-bold transition" title="只去除外圍相連背景，保護圖案內部的白色(如眼白、文字)">
+                        <button id="btnModeFlood" class="py-1.5 px-2 text-gray-600 hover:bg-gray-200 rounded-lg text-xs font-bold transition">
                             <i class="fa-solid fa-shield-halved mr-1"></i>貼紙(保護內部)
                         </button>
                     </div>
@@ -367,26 +361,21 @@
                         <div class="flex justify-between items-center text-xs font-bold text-gray-700 mb-1">
                             <label for="bgTolerance">3. 去背強度 (精細容差)</label>
                             <div class="flex items-center space-x-1">
-                                <button type="button" id="btnTolMinus" class="w-5 h-5 bg-white border rounded text-gray-600 hover:bg-purple-100 flex items-center justify-center text-xs leading-none" title="-0.5">-</button>
+                                <button type="button" id="btnTolMinus" class="w-5 h-5 bg-white border rounded text-gray-600 hover:bg-purple-100 flex items-center justify-center text-xs leading-none">-</button>
                                 <span id="valTolerance" class="text-purple-700 font-mono w-9 text-center bg-white px-1 py-0.5 rounded border text-[11px]">8.0</span>
-                                <button type="button" id="btnTolPlus" class="w-5 h-5 bg-white border rounded text-gray-600 hover:bg-purple-100 flex items-center justify-center text-xs leading-none" title="+0.5">+</button>
+                                <button type="button" id="btnTolPlus" class="w-5 h-5 bg-white border rounded text-gray-600 hover:bg-purple-100 flex items-center justify-center text-xs leading-none">+</button>
                             </div>
                         </div>
                         <input type="range" id="bgTolerance" min="0" max="25" step="0.1" value="8.0" class="w-full accent-purple-600 cursor-pointer">
-                        <div class="flex justify-between text-[10px] text-gray-400 mt-0.5">
-                            <span>0 (極弱)</span>
-                            <span>建議: 3 ~ 15</span>
-                            <span>25 (上限)</span>
-                        </div>
                     </div>
 
                     <div>
                         <div class="flex justify-between items-center text-xs font-bold text-gray-700 mb-1">
                             <label for="bgSmoothing">4. 邊緣羽化 (消除鋸齒)</label>
                             <div class="flex items-center space-x-1">
-                                <button type="button" id="btnSmoothMinus" class="w-5 h-5 bg-white border rounded text-gray-600 hover:bg-purple-100 flex items-center justify-center text-xs leading-none" title="-0.5">-</button>
+                                <button type="button" id="btnSmoothMinus" class="w-5 h-5 bg-white border rounded text-gray-600 hover:bg-purple-100 flex items-center justify-center text-xs leading-none">-</button>
                                 <span id="valSmoothing" class="text-purple-700 font-mono w-9 text-center bg-white px-1 py-0.5 rounded border text-[11px]">4.0</span>
-                                <button type="button" id="btnSmoothPlus" class="w-5 h-5 bg-white border rounded text-gray-600 hover:bg-purple-100 flex items-center justify-center text-xs leading-none" title="+0.5">+</button>
+                                <button type="button" id="btnSmoothPlus" class="w-5 h-5 bg-white border rounded text-gray-600 hover:bg-purple-100 flex items-center justify-center text-xs leading-none">+</button>
                             </div>
                         </div>
                         <input type="range" id="bgSmoothing" min="0" max="15" step="0.1" value="4.0" class="w-full accent-purple-600 cursor-pointer">
@@ -425,7 +414,6 @@
                 </div>
             </aside>
 
-            <!-- 右側圖片預覽與放大檢視區 -->
             <div class="flex-1 p-6 flex flex-col items-center justify-center overflow-hidden relative" id="bgWorkspace">
                 <div id="uploadAreaBg" class="w-full max-w-2xl flex flex-col items-center justify-center border-2 border-dashed border-purple-300 rounded-2xl bg-white/80 p-12 hover:border-purple-500 hover:shadow-lg cursor-pointer transition-all duration-200">
                     <div class="w-20 h-20 rounded-full bg-purple-50 flex items-center justify-center mb-4 text-purple-500">
@@ -451,12 +439,12 @@
                             <button type="button" id="btnBgZoomOut" class="w-6 h-6 bg-white border rounded hover:bg-purple-100 text-xs font-bold flex items-center justify-center">-</button>
                             <span id="bgZoomVal" class="font-mono text-xs font-bold text-purple-700 w-12 text-center">100%</span>
                             <button type="button" id="btnBgZoomIn" class="w-6 h-6 bg-white border rounded hover:bg-purple-100 text-xs font-bold flex items-center justify-center">+</button>
-                            <button type="button" id="btnBgZoomReset" class="px-2 py-0.5 bg-white border rounded hover:bg-purple-100 text-[11px] font-semibold text-gray-600">適應視窗</button>
+                            <button type="button" id="btnBgZoomReset" class="px-2 py-0.5 bg-white border rounded hover:bg-purple-100 text-[11px] font-semibold text-gray-600">適應</button>
                         </div>
                     </div>
 
                     <div id="eyedropperHint" class="hidden mb-2 text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full border border-amber-300 font-bold animate-pulse shrink-0">
-                        <i class="fa-solid fa-hand-pointer mr-1"></i> 請直接點擊下方圖片中您想要去除的背景區域（放大狀態下同樣精準）！
+                        <i class="fa-solid fa-hand-pointer mr-1"></i> 請直接點擊下方圖片中您想要去除的背景區域！
                     </div>
 
                     <div id="bgCanvasWrapper" class="border-2 border-gray-300 rounded-2xl overflow-auto shadow-inner bg-checkerboard w-full max-w-4xl flex-1 flex items-center justify-center p-6 transition-colors">
@@ -467,127 +455,155 @@
         </section>
 
         <!-- ========================================== -->
-        <!-- 模組 4：無廣告 YouTube 播放器 (進階去廣告與多引擎版) -->
+        <!-- 模組 4：音訊格式轉換 (Audio Converter) -->
         <!-- ========================================== -->
-        <section id="viewYoutube" class="view-animate absolute inset-0 flex h-full hide transition-colors duration-500">
-            
-            <!-- 主播放器區 -->
-            <div class="flex-1 flex flex-col p-5 overflow-y-auto items-center">
+        <section id="viewAudio" class="view-animate absolute inset-0 flex h-full hide bg-gray-50">
+            <aside class="w-80 bg-white border-r p-6 flex flex-col shadow-lg z-10 overflow-y-auto">
+                <h2 class="text-xl font-bold text-teal-700 mb-4 flex items-center border-b pb-3">
+                    <i class="fa-solid fa-file-audio mr-2"></i> 音訊格式轉換
+                </h2>
                 
-                <!-- 頂部網址輸入與控制列 -->
-                <div class="w-full max-w-5xl bg-white p-3.5 rounded-2xl shadow-md border border-gray-200/80 mb-3 flex flex-wrap gap-2.5 items-center z-20">
-                    <div class="flex items-center text-red-600 font-black text-base mr-1">
-                        <i class="fa-brands fa-youtube text-2xl mr-1.5"></i> 課堂播放器
-                    </div>
-                    <div class="flex-1 min-w-[220px] relative">
-                        <input type="text" id="ytUrlInput" placeholder="貼上 YouTube 網址、短網址 (youtu.be) 或 Shorts..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-red-500 focus:bg-white transition">
-                        <i class="fa-solid fa-link absolute left-3 top-2.5 text-gray-400 text-sm"></i>
-                    </div>
-                    <button id="btnLoadYt" class="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold rounded-xl shadow hover:opacity-95 transition text-sm flex items-center">
-                        <i class="fa-solid fa-play mr-1.5"></i> 載入影片
-                    </button>
-                    <button id="btnAddToPlaylist" class="px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 font-bold rounded-xl hover:bg-amber-100 transition text-sm flex items-center" title="將目前影片收藏至右側課堂清單">
-                        <i class="fa-solid fa-bookmark mr-1"></i> 收藏
-                    </button>
-                    <div class="h-5 w-px bg-gray-200 mx-0.5"></div>
-                    <!-- 新增：本地影片檔直連播放 (100% 零廣告) -->
-                    <button id="btnLocalVideo" class="px-3 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold rounded-xl hover:bg-indigo-100 transition text-xs flex items-center" title="直接播放電腦中的 MP4 影片檔，100% 絕對無廣告！">
-                        <i class="fa-solid fa-folder-open mr-1.5"></i> 播本地 MP4
-                    </button>
-                    <input type="file" id="localVideoInput" accept="video/*" class="hidden">
-                </div>
-
-                <!-- 進階控制列：線路切換 + 廣告快轉跳過 + 起訖時間設定 -->
-                <div class="w-full max-w-5xl bg-white/80 backdrop-blur-xs px-4 py-2.5 rounded-xl border border-gray-200/70 mb-3 flex flex-wrap justify-between items-center gap-2 text-xs z-20">
-                    <!-- 左：線路與節點選擇 -->
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="font-bold text-gray-600"><i class="fa-solid fa-server mr-1 text-blue-600"></i>播放引擎：</span>
-                        <select id="ytEngineSelect" class="bg-white border border-gray-300 rounded-lg px-2.5 py-1 font-bold text-gray-700 focus:outline-none focus:border-blue-500">
-                            <option value="ytapi">線路 1：YouTube API 智慧控制 (支援快轉略過)</option>
-                            <option value="piped_kavin">線路 2：Piped 純淨無廣告 (kavin.rocks)</option>
-                            <option value="inv_nadeko">線路 3：Invidious 無廣告節點 A (nadeko.net)</option>
-                            <option value="inv_nerdvpn">線路 4：Invidious 無廣告節點 B (nerdvpn.de)</option>
-                            <option value="inv_jing">線路 5：Invidious 無廣告節點 C (jing.rocks)</option>
-                        </select>
-
-                        <!-- 當遇到廣告時的一鍵強制略過按鈕 -->
-                        <button id="btnSkipAd" class="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-lg shadow-xs hover:opacity-95 transition flex items-center" title="若片頭出現廣告，點擊此處強制將時間軸推至正片或16倍速快轉廣告">
-                            <i class="fa-solid fa-forward-fast mr-1"></i> 略過片頭 / 廣告快轉
-                        </button>
-                    </div>
-
-                    <!-- 右：自訂起訖秒數與關燈 -->
-                    <div class="flex flex-wrap items-center gap-2">
-                        <div class="flex items-center space-x-1 bg-slate-100 px-2 py-1 rounded-lg border" title="設定從第幾秒開始播放，可直接避開片頭廣告或冗長前奏">
-                            <span class="text-gray-500 font-semibold">起點(秒):</span>
-                            <input type="number" id="ytStartSec" min="0" value="0" class="w-12 bg-white border rounded px-1 py-0.5 text-center font-mono text-xs">
-                            <span class="text-gray-500 font-semibold ml-1">終點:</span>
-                            <input type="number" id="ytEndSec" min="0" placeholder="選填" class="w-14 bg-white border rounded px-1 py-0.5 text-center font-mono text-xs">
-                        </div>
-
-                        <label class="flex items-center space-x-1 font-bold text-gray-600 bg-white px-2.5 py-1 rounded-lg border cursor-pointer">
-                            <input type="checkbox" id="chkYtLoop" class="accent-red-600">
-                            <span>循環</span>
+                <div class="mb-5">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">1. 選擇輸出格式</label>
+                    <div class="flex space-x-2">
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="audioFmt" value="mp3" checked class="hidden peer">
+                            <div class="py-2.5 px-3 border-2 border-gray-200 rounded-xl text-center font-bold text-sm text-gray-500 peer-checked:bg-teal-50 peer-checked:text-teal-700 peer-checked:border-teal-500 transition">
+                                MP3
+                            </div>
                         </label>
-
-                        <button id="btnCinemaDim" class="px-3 py-1 rounded-lg font-bold bg-slate-800 text-amber-300 hover:bg-slate-700 transition flex items-center shadow-xs">
-                            <i class="fa-solid fa-lightbulb mr-1"></i> 關燈
-                        </button>
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="audioFmt" value="wav" class="hidden peer">
+                            <div class="py-2.5 px-3 border-2 border-gray-200 rounded-xl text-center font-bold text-sm text-gray-500 peer-checked:bg-teal-50 peer-checked:text-teal-700 peer-checked:border-teal-500 transition">
+                                WAV
+                            </div>
+                        </label>
                     </div>
                 </div>
+                
+                <div class="bg-teal-50 p-3 rounded-xl border border-teal-100 text-xs text-teal-800 mb-4 space-y-1.5">
+                    <div><strong>💡 使用提示：</strong></div>
+                    <div>• 將 M4A 或其他音訊檔上傳，即可純前端轉換。</div>
+                    <div>• 轉換過程完全在您的電腦上執行，保護隱私不外流。</div>
+                </div>
 
-                <!-- 16:9 響應式黑板螢幕外框 -->
-                <div class="w-full max-w-5xl flex-1 flex flex-col">
-                    <div class="relative w-full bg-slate-950 rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-800 aspect-video flex items-center justify-center">
-                        <!-- 尚未載入影片時的引導畫面 -->
-                        <div id="ytEmptyState" class="text-center p-8 text-slate-400">
-                            <div class="w-16 h-16 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-3 text-red-500 shadow-lg">
-                                <i class="fa-brands fa-youtube text-3xl"></i>
-                            </div>
-                            <h3 class="text-lg font-bold text-white mb-2">課堂多引擎 YouTube 與本地播放器</h3>
-                            <div class="text-xs text-slate-400 max-w-lg mx-auto space-y-1.5 text-left bg-slate-900/90 p-4 rounded-xl border border-slate-800">
-                                <div>💡 <strong>為什麼官方線路有時仍有廣告？</strong> YouTube 現已對所有嵌入網址強制派發廣告。若出現片頭廣告，請點擊上方橘色 <strong>「⏩ 略過片頭 / 廣告快轉」</strong> 按鈕，或設定「起點(秒)」為 <code>5</code> 秒直接切入正片！</div>
-                                <div>💡 <strong>線路 2~5 無回應怎麼辦？</strong> 第三方開源鏡像偶爾會被 YouTube 阻擋，可從下拉選單切換不同國家節點，或點擊右下方「在獨立無廣告視窗開啟」。</div>
-                                <div>💡 <strong>終極零廣告方案：</strong> 若瀏覽器安裝免費的 <a href="https://ublockorigin.com/" target="_blank" class="text-blue-400 underline">uBlock Origin</a> 擴充功能，或使用上方「📁 播本地 MP4」，即可達成 100% 永久零廣告！</div>
-                            </div>
-                        </div>
+                <div id="audioProgress" class="hidden mb-4 p-3 bg-indigo-50 rounded-xl border border-indigo-100 text-indigo-700 text-sm font-bold text-center animate-pulse">
+                    <i class="fa-solid fa-spinner fa-spin mr-2"></i> <span id="audioProgressText">正在處理中...</span>
+                </div>
 
-                        <!-- 1. 官方 YouTube API 容器 -->
-                        <div id="ytApiPlayerContainer" class="w-full h-full hidden">
-                            <div id="ytApiDiv" class="w-full h-full"></div>
-                        </div>
+                <div class="mt-auto space-y-2.5 pt-4 border-t">
+                    <button id="btnDownloadAudio" disabled class="w-full py-3 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl font-bold hover:opacity-95 shadow flex items-center justify-center transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-download mr-2"></i> 下載轉換後檔案
+                    </button>
+                    <button id="btnResetAudio" disabled class="w-full py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition disabled:opacity-50 text-sm font-semibold">
+                        重新選擇檔案
+                    </button>
+                </div>
+            </aside>
 
-                        <!-- 2. 第三方 Piped / Invidious Iframe 容器 -->
-                        <iframe id="ytMirrorIframe" class="w-full h-full hidden" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-
-                        <!-- 3. 本地 MP4 Video 播放器 -->
-                        <video id="localVideoPlayer" class="w-full h-full hidden bg-black" controls controlsList="nodownload"></video>
+            <div class="flex-1 p-6 flex flex-col items-center justify-center overflow-auto relative" id="audioWorkspace">
+                <div id="uploadAreaAudio" class="w-full max-w-2xl flex flex-col items-center justify-center border-4 border-dashed border-teal-200 rounded-3xl bg-white/80 p-16 hover:border-teal-400 hover:shadow-lg cursor-pointer transition-all duration-200">
+                    <div class="w-24 h-24 rounded-full bg-teal-50 flex items-center justify-center mb-5 text-teal-500 shadow-inner">
+                        <i class="fa-solid fa-music text-5xl"></i>
                     </div>
+                    <h2 class="text-2xl font-bold text-gray-700">點擊或拖曳音訊檔至此進行轉換</h2>
+                    <p class="text-gray-400 mt-2 text-sm">支援 M4A, MP3, WAV, AAC 等格式</p>
+                    <input type="file" id="audioInput" accept="audio/*,video/mp4" class="hidden">
+                </div>
 
-                    <!-- 底部輔助狀態與外部無廣告跳轉連結 -->
-                    <div class="mt-2 flex justify-between items-center px-2 text-xs text-gray-500">
-                        <span id="ytStatusText">準備就緒</span>
-                        <div class="space-x-3">
-                            <a id="linkExternalClean" href="#" target="_blank" class="hidden text-blue-600 hover:underline font-bold">
-                                <i class="fa-solid fa-up-right-from-square mr-1"></i>若鏡像無法嵌入，點此在新分頁開啟純淨無廣告版
-                            </a>
-                        </div>
+                <div id="audioPlayerContainer" class="hidden flex-col items-center w-full max-w-2xl bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white mb-5 shadow-lg shadow-teal-500/30">
+                        <i class="fa-solid fa-file-audio text-3xl"></i>
+                    </div>
+                    <h3 id="audioFileName" class="text-xl font-bold text-gray-800 mb-6 truncate max-w-full px-4 text-center">filename.m4a</h3>
+                    <audio id="audioPreview" controls class="w-full shadow-sm rounded-full"></audio>
+                    <div class="mt-6 text-sm text-gray-500 font-medium bg-gray-50 px-4 py-2 rounded-lg border w-full text-center">
+                        轉換完成！您可以點擊左側按鈕下載，或直接播放試聽。
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- 右側：課堂播放清單 -->
-            <aside class="w-72 bg-white border-l p-4 flex flex-col shadow-lg z-10">
-                <div class="flex justify-between items-center border-b pb-3 mb-3">
-                    <h3 class="font-bold text-gray-800 text-sm flex items-center">
-                        <i class="fa-solid fa-list-ul text-red-500 mr-2"></i>課堂常用影片清單
-                    </h3>
-                    <span class="text-[11px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold" id="ytPlaylistCount">0</span>
-                </div>
-                <p class="text-xs text-gray-400 mb-3">準備好的教學或音樂示範影片可收藏於此，下次開啟網頁依然保留。</p>
+        <!-- ========================================== -->
+        <!-- 模組 5：視訊格式轉換 (Video Converter via FFmpeg) -->
+        <!-- ========================================== -->
+        <section id="viewVideo" class="view-animate absolute inset-0 flex h-full hide bg-slate-50">
+            <aside class="w-80 bg-white border-r p-6 flex flex-col shadow-lg z-10 overflow-y-auto">
+                <h2 class="text-xl font-bold text-cyan-700 mb-4 flex items-center border-b pb-3">
+                    <i class="fa-solid fa-film mr-2"></i> 視訊格式轉換
+                </h2>
                 
-                <div id="ytPlaylistContainer" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
+                <div class="mb-5">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">1. 選擇輸出格式</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="videoFmt" value="mp4" checked class="hidden peer">
+                            <div class="py-2 px-1 border-2 border-gray-200 rounded-lg text-center font-bold text-sm text-gray-500 peer-checked:bg-cyan-50 peer-checked:text-cyan-700 peer-checked:border-cyan-500 transition">MP4</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="videoFmt" value="webm" class="hidden peer">
+                            <div class="py-2 px-1 border-2 border-gray-200 rounded-lg text-center font-bold text-sm text-gray-500 peer-checked:bg-cyan-50 peer-checked:text-cyan-700 peer-checked:border-cyan-500 transition">WebM</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="videoFmt" value="gif" class="hidden peer">
+                            <div class="py-2 px-1 border-2 border-gray-200 rounded-lg text-center font-bold text-sm text-gray-500 peer-checked:bg-cyan-50 peer-checked:text-cyan-700 peer-checked:border-cyan-500 transition">GIF</div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">2. 輸出畫質/解析度</label>
+                    <select id="videoResSelect" class="w-full bg-white border-2 border-gray-200 rounded-xl px-3 py-2.5 font-bold text-sm text-gray-700 focus:outline-none focus:border-cyan-500">
+                        <option value="original">保持原畫質 (不縮放)</option>
+                        <option value="720">720p HD (推薦)</option>
+                        <option value="480">480p SD (適合小檔案)</option>
+                        <option value="360">360p (極小檔案)</option>
+                    </select>
+                </div>
+                
+                <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-xs text-amber-800 mb-4 space-y-1.5">
+                    <div><strong>⚠️ 注意事項：</strong></div>
+                    <div>• 視訊轉換極耗電腦效能，轉換長片時請耐心等候。</div>
+                    <div>• 依賴 WebAssembly 技術，部分舊版瀏覽器可能不支援。</div>
+                </div>
+
+                <div id="videoProgress" class="hidden mb-4 p-3 bg-cyan-50 rounded-xl border border-cyan-200 text-cyan-700 text-sm font-bold text-center">
+                    <i class="fa-solid fa-spinner fa-spin mr-2"></i> <span id="videoProgressText">正在準備轉換...</span>
+                </div>
+
+                <div class="mt-auto space-y-2.5 pt-4 border-t">
+                    <button id="btnDownloadVideo" disabled class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl font-bold hover:opacity-95 shadow flex items-center justify-center transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-download mr-2"></i> 下載轉換後視訊
+                    </button>
+                    <button id="btnResetVideo" disabled class="w-full py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition disabled:opacity-50 text-sm font-semibold">
+                        重新選擇影片
+                    </button>
+                </div>
             </aside>
+
+            <div class="flex-1 p-6 flex flex-col items-center justify-center overflow-auto relative" id="videoWorkspace">
+                <div id="uploadAreaVideo" class="w-full max-w-2xl flex flex-col items-center justify-center border-4 border-dashed border-cyan-200 rounded-3xl bg-white/80 p-16 hover:border-cyan-400 hover:shadow-lg cursor-pointer transition-all duration-200">
+                    <div class="w-24 h-24 rounded-full bg-cyan-50 flex items-center justify-center mb-5 text-cyan-500 shadow-inner">
+                        <i class="fa-solid fa-film text-5xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-700">點擊或拖曳影片檔至此進行轉換</h2>
+                    <p class="text-gray-400 mt-2 text-sm">支援 MP4, MOV, WebM 等各種影片格式</p>
+                    <input type="file" id="videoInput" accept="video/*" class="hidden">
+                </div>
+
+                <div id="videoPlayerContainer" class="hidden flex-col items-center w-full max-w-3xl bg-white p-6 rounded-3xl shadow-xl border border-gray-100">
+                    <div class="flex items-center justify-center text-cyan-600 mb-3">
+                        <i class="fa-solid fa-clapperboard text-2xl mr-2"></i>
+                        <h3 id="videoFileName" class="text-lg font-bold text-gray-800 truncate max-w-sm">filename.mp4</h3>
+                    </div>
+                    
+                    <video id="videoPreview" controls class="w-full max-h-[50vh] shadow-sm rounded-xl bg-black"></video>
+                    
+                    <div id="videoSuccessMsg" class="hidden mt-4 text-sm text-gray-500 font-medium bg-gray-50 px-4 py-2 rounded-lg border w-full text-center">
+                        ✅ 轉換完成！您可以點擊左側按鈕下載。
+                    </div>
+                </div>
+            </div>
         </section>
 
     </main>
@@ -681,7 +697,7 @@
 
     <!-- JS 邏輯 -->
     <script>
-        // === 通用工具函式：自動裁切 Canvas 透明邊緣 ===
+        // === 通用工具函式 ===
         function getTrimmedCanvas(sourceCanvas, padding = 4) {
             const ctx = sourceCanvas.getContext('2d');
             const width = sourceCanvas.width;
@@ -733,57 +749,28 @@
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
 
-        // === 高解析度放大檢視燈箱 ===
-        const lightbox = {
-            modal: document.getElementById('zoomLightboxModal'),
-            img: document.getElementById('lightboxImg'),
-            title: document.getElementById('lightboxTitle'),
-            val: document.getElementById('lightboxZoomVal'),
-            scale: 1.0,
-            baseWidth: 750
-        };
-
-        function openZoomLightbox(dataUrl, titleText = '高解析度預覽') {
-            lightbox.img.src = dataUrl;
-            lightbox.title.textContent = titleText;
-            lightbox.scale = 1.0;
-            updateLightboxScale();
-            lightbox.modal.classList.remove('hidden');
+        function downloadFile(bytes, filename, mimeType) {
+            const blob = new Blob([bytes], { type: mimeType });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
         }
 
-        function updateLightboxScale() {
-            lightbox.img.style.width = `${Math.round(lightbox.baseWidth * lightbox.scale)}px`;
-            lightbox.val.textContent = `${Math.round(lightbox.scale * 100)}%`;
-        }
-
-        document.getElementById('btnLightboxZoomIn').onclick = () => {
-            lightbox.scale = Math.min(3.0, lightbox.scale + 0.25);
-            updateLightboxScale();
-        };
-        document.getElementById('btnLightboxZoomOut').onclick = () => {
-            lightbox.scale = Math.max(0.4, lightbox.scale - 0.25);
-            updateLightboxScale();
-        };
-        document.getElementById('btnCloseLightbox').onclick = () => lightbox.modal.classList.add('hidden');
-        lightbox.modal.addEventListener('click', (e) => {
-            if (e.target === lightbox.modal || e.target.id === 'lightboxBody') lightbox.modal.classList.add('hidden');
-        });
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') lightbox.modal.classList.add('hidden');
-        });
-
-        // === 四大分頁切換邏輯 ===
+        // === 分頁切換邏輯 ===
         const views = {
             organize: document.getElementById('viewOrganize'),
             annotate: document.getElementById('viewAnnotate'),
             bgRemover: document.getElementById('viewBgRemover'),
-            youtube: document.getElementById('viewYoutube')
+            audio: document.getElementById('viewAudio'),
+            video: document.getElementById('viewVideo')
         };
         const tabs = {
             organize: document.getElementById('tabBtnOrganize'),
             annotate: document.getElementById('tabBtnAnnotate'),
             bgRemover: document.getElementById('tabBtnBgRemover'),
-            youtube: document.getElementById('tabBtnYoutube')
+            audio: document.getElementById('tabBtnAudio'),
+            video: document.getElementById('tabBtnVideo')
         };
 
         function switchTab(target) {
@@ -801,7 +788,8 @@
         tabs.organize.addEventListener('click', () => switchTab('organize'));
         tabs.annotate.addEventListener('click', () => switchTab('annotate'));
         tabs.bgRemover.addEventListener('click', () => switchTab('bgRemover'));
-        tabs.youtube.addEventListener('click', () => switchTab('youtube'));
+        tabs.audio.addEventListener('click', () => switchTab('audio'));
+        tabs.video.addEventListener('click', () => switchTab('video'));
 
         // ==========================================
         // 模組 1：頁面管理邏輯
@@ -1434,8 +1422,8 @@
         document.getElementById('btnDateStamp').onclick = () => {
             setAnnTool('btnSelect', 'select'); annotateState.fabricCanvas.isDrawingMode = false;
             const d = new Date();
-            const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-            const text = new fabric.Text(`Reviewed: ${dateStr}`, { 
+            const dateStr = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+            const text = new fabric.Text(`${dateStr}`, { 
                 left: annotateState.baseWidth - 260, top: 40, 
                 fill: '#dc2626', fontSize: 22, fontWeight: 'bold', fontFamily: 'Courier New', borderColor: '#dc2626'
             });
@@ -1493,7 +1481,7 @@
         }
         document.getElementById('btnDeleteObj').onclick = deleteSelectedObjects;
         window.addEventListener('keydown', (e) => {
-            if ((e.key === 'Delete' || e.key === 'Backspace') && !views.annotate.classList.contains('hide')) {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && !views.annotate.classList.contains('hide') && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
                 deleteSelectedObjects();
             }
         });
@@ -2001,294 +1989,351 @@
             });
         });
 
-
         // ==========================================
-        // 模組 4：無廣告 YouTube 播放器 (API 智慧略過 + 多節點鏡像 + 本地 MP4)
+        // 模組 4：音訊格式轉換 (WAV & MP3)
         // ==========================================
-        let ytApiPlayer = null;
-        let isYtApiReady = false;
-        window.onYouTubeIframeAPIReady = function() {
-            isYtApiReady = true;
-        };
+        
+        function bufferToWav(abuffer) {
+            let numOfChan = abuffer.numberOfChannels,
+                length = abuffer.length * numOfChan * 2 + 44,
+                buffer = new ArrayBuffer(length),
+                view = new DataView(buffer),
+                channels = [], i, sample, offset = 0, pos = 0;
 
-        const ytState = {
-            currentVideoId: null,
-            engine: 'ytapi',
-            playlist: JSON.parse(localStorage.getItem('edu_yt_playlist') || '[]')
-        };
+            setUint32(0x46464952); // "RIFF"
+            setUint32(length - 8); // file length - 8
+            setUint32(0x45564157); // "WAVE"
+            setUint32(0x20746d66); // "fmt " chunk
+            setUint32(16); // length = 16
+            setUint16(1); // PCM (uncompressed)
+            setUint16(numOfChan);
+            setUint32(abuffer.sampleRate);
+            setUint32(abuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
+            setUint16(numOfChan * 2); // block-align
+            setUint16(16); // 16-bit 
 
-        const ytUI = {
-            input: document.getElementById('ytUrlInput'),
-            btnLoad: document.getElementById('btnLoadYt'),
-            btnAdd: document.getElementById('btnAddToPlaylist'),
-            btnLocal: document.getElementById('btnLocalVideo'),
-            localInput: document.getElementById('localVideoInput'),
-            engineSelect: document.getElementById('ytEngineSelect'),
-            btnSkipAd: document.getElementById('btnSkipAd'),
-            startSec: document.getElementById('ytStartSec'),
-            endSec: document.getElementById('ytEndSec'),
-            chkLoop: document.getElementById('chkYtLoop'),
-            btnDim: document.getElementById('btnCinemaDim'),
-            empty: document.getElementById('ytEmptyState'),
-            apiContainer: document.getElementById('ytApiPlayerContainer'),
-            mirrorIframe: document.getElementById('ytMirrorIframe'),
-            localPlayer: document.getElementById('localVideoPlayer'),
-            statusText: document.getElementById('ytStatusText'),
-            linkExternal: document.getElementById('linkExternalClean'),
-            playlistContainer: document.getElementById('ytPlaylistContainer'),
-            playlistCount: document.getElementById('ytPlaylistCount')
-        };
+            setUint32(0x61746164); // "data" - chunk
+            setUint32(length - pos - 4); // chunk length
 
-        const MIRROR_HOSTS = {
-            piped_kavin: 'https://piped.kavin.rocks',
-            inv_nadeko: 'https://inv.nadeko.net',
-            inv_nerdvpn: 'https://invidious.nerdvpn.de',
-            inv_jing: 'https://invidious.jing.rocks'
-        };
+            for(i = 0; i < abuffer.numberOfChannels; i++) channels.push(abuffer.getChannelData(i));
 
-        function extractYouTubeId(urlStr) {
-            if (!urlStr) return null;
-            const clean = urlStr.trim();
-            if (/^[a-zA-Z0-9_-]{11}$/.test(clean)) return clean;
-            const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
-            const match = clean.match(regExp);
-            return match ? match[1] : null;
-        }
-
-        function hideAllVideoPlayers() {
-            ytUI.empty.classList.add('hidden');
-            ytUI.apiContainer.classList.add('hidden');
-            ytUI.mirrorIframe.classList.add('hidden');
-            ytUI.localPlayer.classList.add('hidden');
-            ytUI.localPlayer.pause();
-            if (ytApiPlayer && typeof ytApiPlayer.pauseVideo === 'function') {
-                ytApiPlayer.pauseVideo();
-            }
-            ytUI.mirrorIframe.src = '';
-        }
-
-        function loadYouTubeVideo(videoId) {
-            if (!videoId) return alert('無法識別此 YouTube 網址，請確認連結是否正確！');
-            ytState.currentVideoId = videoId;
-            ytState.engine = ytUI.engineSelect.value;
-
-            const startSeconds = Math.max(0, parseInt(ytUI.startSec.value, 10) || 0);
-            const endSeconds = parseInt(ytUI.endSec.value, 10) || 0;
-            const isLoop = ytUI.chkLoop.checked;
-
-            hideAllVideoPlayers();
-
-            // 若選擇第三方開源無廣告鏡像線路
-            if (ytState.engine !== 'ytapi') {
-                const host = MIRROR_HOSTS[ytState.engine];
-                let embedUrl = `${host}/embed/${videoId}?autoplay=1&rel=0`;
-                if (startSeconds > 0) embedUrl += `&start=${startSeconds}&t=${startSeconds}`;
-                if (endSeconds > startSeconds) embedUrl += `&end=${endSeconds}`;
-                if (isLoop) embedUrl += `&loop=1`;
-
-                ytUI.mirrorIframe.classList.remove('hidden');
-                ytUI.mirrorIframe.src = embedUrl;
-                ytUI.statusText.innerHTML = `<i class="fa-solid fa-shield-halved text-emerald-600 mr-1"></i>正在使用開源無廣告鏡像 (${host}) 播放`;
-                ytUI.linkExternal.href = `${host}/watch?v=${videoId}`;
-                ytUI.linkExternal.classList.remove('hidden');
-                return;
-            }
-
-            // 預設：使用官方 YouTube IFrame API (支援程式控制跳過與區段循環)
-            ytUI.apiContainer.classList.remove('hidden');
-            ytUI.linkExternal.href = `https://inv.nadeko.net/watch?v=${videoId}`;
-            ytUI.linkExternal.classList.remove('hidden');
-            ytUI.statusText.innerHTML = `<i class="fa-brands fa-youtube text-red-600 mr-1"></i>官方 API 智慧模式（若遇片頭廣告可點擊上方「略過片頭 / 廣告快轉」）`;
-
-            const playerVars = {
-                autoplay: 1,
-                rel: 0,
-                modestbranding: 1,
-                iv_load_policy: 3,
-                start: startSeconds
-            };
-            if (endSeconds > startSeconds) playerVars.end = endSeconds;
-            if (isLoop) {
-                playerVars.loop = 1;
-                playerVars.playlist = videoId;
-            }
-
-            if (ytApiPlayer && typeof ytApiPlayer.loadVideoById === 'function') {
-                ytApiPlayer.loadVideoById({
-                    videoId: videoId,
-                    startSeconds: startSeconds,
-                    endSeconds: endSeconds > startSeconds ? endSeconds : undefined
-                });
-            } else if (isYtApiReady && window.YT && window.YT.Player) {
-                ytApiPlayer = new YT.Player('ytApiDiv', {
-                    height: '100%',
-                    width: '100%',
-                    videoId: videoId,
-                    host: 'https://www.youtube-nocookie.com',
-                    playerVars: playerVars,
-                    events: {
-                        onStateChange: (event) => {
-                            // 若開啟循環且到達終點結束，自動重頭播放
-                            if (event.data === YT.PlayerState.ENDED && ytUI.chkLoop.checked) {
-                                const s = Math.max(0, parseInt(ytUI.startSec.value, 10) || 0);
-                                ytApiPlayer.seekTo(s, true);
-                                ytApiPlayer.playVideo();
-                            }
-                        }
-                    }
-                });
-            } else {
-                // Fallback 若 API 腳本尚未載入完成
-                let fallbackUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&start=${startSeconds}`;
-                if (endSeconds > startSeconds) fallbackUrl += `&end=${endSeconds}`;
-                if (isLoop) fallbackUrl += `&loop=1&playlist=${videoId}`;
-                ytUI.apiContainer.classList.add('hidden');
-                ytUI.mirrorIframe.classList.remove('hidden');
-                ytUI.mirrorIframe.src = fallbackUrl;
-            }
-        }
-
-        // 廣告快轉 / 略過片頭控制器
-        ytUI.btnSkipAd.addEventListener('click', () => {
-            if (!ytState.currentVideoId) return alert('請先載入一部 YouTube 影片！');
-
-            // 1. 嘗試透過 HTML5 video 標籤直接將廣告 16 倍速快轉並跳至結尾
-            try {
-                const videoEl = document.querySelector('video');
-                if (videoEl && !ytUI.localPlayer.classList.contains('hidden')) {
-                    videoEl.currentTime += 10;
-                    return;
+            while(pos < length) {
+                for(i = 0; i < numOfChan; i++) {
+                    sample = Math.max(-1, Math.min(1, channels[i][offset])); 
+                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0; 
+                    view.setInt16(pos, sample, true);
+                    pos += 2;
                 }
-            } catch (e) {}
-
-            // 2. 透過 YouTube IFrame API 強制重新定位時間軸（能跳過部分嵌入式前導廣告或直接切入正片）
-            const targetStart = Math.max(2, parseInt(ytUI.startSec.value, 10) || 0);
-            if (ytApiPlayer && typeof ytApiPlayer.seekTo === 'function') {
-                const curr = ytApiPlayer.getCurrentTime ? ytApiPlayer.getCurrentTime() : 0;
-                const jumpTo = curr > 1 ? curr + 15 : targetStart;
-                ytApiPlayer.seekTo(jumpTo, true);
-                ytApiPlayer.playVideo();
-                ytUI.statusText.innerHTML = `<span class="text-amber-600 font-bold">⏩ 已執行時間軸強制推進 (${Math.round(jumpTo)}秒)！</span>`;
-            } else {
-                // 若在 Iframe 模式，設定起點為 3 秒後重新載入以避開 0 秒處的觸發點
-                if (parseInt(ytUI.startSec.value, 10) === 0) ytUI.startSec.value = 3;
-                loadYouTubeVideo(ytState.currentVideoId);
+                offset++;
             }
-        });
+            return new Blob([buffer], {type: "audio/wav"});
 
-        // 本地 MP4 影片檔播放 (100% 零廣告)
-        ytUI.btnLocal.addEventListener('click', () => ytUI.localInput.click());
-        ytUI.localInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            hideAllVideoPlayers();
-            const fileUrl = URL.createObjectURL(file);
-            ytUI.localPlayer.src = fileUrl;
-            ytUI.localPlayer.loop = ytUI.chkLoop.checked;
-            ytUI.localPlayer.classList.remove('hidden');
-            ytUI.localPlayer.play();
-            ytUI.linkExternal.classList.add('hidden');
-            ytUI.statusText.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i>正在播放本地影片：<strong>${file.name}</strong>（100% 零廣告離線模式）`;
-            e.target.value = '';
-        });
-
-        ytUI.btnLoad.addEventListener('click', () => {
-            const vid = extractYouTubeId(ytUI.input.value);
-            loadYouTubeVideo(vid);
-        });
-
-        ytUI.input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') ytUI.btnLoad.click();
-        });
-
-        ytUI.engineSelect.addEventListener('change', () => {
-            if (ytState.currentVideoId) loadYouTubeVideo(ytState.currentVideoId);
-        });
-
-        ytUI.chkLoop.addEventListener('change', () => {
-            ytUI.localPlayer.loop = ytUI.chkLoop.checked;
-            if (ytState.currentVideoId && ytUI.localPlayer.classList.contains('hidden')) {
-                loadYouTubeVideo(ytState.currentVideoId);
-            }
-        });
-
-        // 關燈專注模式
-        ytUI.btnDim.addEventListener('click', () => {
-            views.youtube.classList.toggle('cinema-dim-active');
-            const isDim = views.youtube.classList.contains('cinema-dim-active');
-            ytUI.btnDim.innerHTML = isDim 
-                ? '<i class="fa-solid fa-sun mr-1 text-yellow-300"></i> 開燈' 
-                : '<i class="fa-solid fa-lightbulb mr-1"></i> 關燈';
-        });
-
-        // 課堂播放清單管理
-        function renderYtPlaylist() {
-            ytUI.playlistContainer.innerHTML = '';
-            ytUI.playlistCount.textContent = ytState.playlist.length;
-
-            if (ytState.playlist.length === 0) {
-                ytUI.playlistContainer.innerHTML = `
-                    <div class="text-center py-10 text-gray-300 text-xs">
-                        <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
-                        尚無收藏影片
-                    </div>`;
-                return;
-            }
-
-            ytState.playlist.forEach((item, index) => {
-                const card = document.createElement('div');
-                card.className = "group flex items-center space-x-2.5 p-2 rounded-xl border hover:border-red-300 hover:bg-red-50/40 cursor-pointer transition bg-white shadow-2xs";
-                card.innerHTML = `
-                    <img src="https://img.youtube.com/vi/${item.id}/mqdefault.jpg" class="w-20 h-12 object-cover rounded-lg border shrink-0">
-                    <div class="flex-1 min-w-0">
-                        <div class="text-xs font-bold text-gray-700 truncate group-hover:text-red-600">${item.title}</div>
-                        <div class="text-[10px] text-gray-400 font-mono">${item.id}</div>
-                    </div>
-                    <button class="btn-del-yt text-gray-300 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition" title="移除">
-                        <i class="fa-solid fa-trash-can text-xs"></i>
-                    </button>
-                `;
-                card.addEventListener('click', (e) => {
-                    if (e.target.closest('.btn-del-yt')) return;
-                    ytUI.input.value = `https://www.youtube.com/watch?v=${item.id}`;
-                    loadYouTubeVideo(item.id);
-                });
-                card.querySelector('.btn-del-yt').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    ytState.playlist.splice(index, 1);
-                    localStorage.setItem('edu_yt_playlist', JSON.stringify(ytState.playlist));
-                    renderYtPlaylist();
-                });
-                ytUI.playlistContainer.appendChild(card);
-            });
+            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
         }
 
-        ytUI.btnAdd.addEventListener('click', () => {
-            const vid = extractYouTubeId(ytUI.input.value) || ytState.currentVideoId;
-            if (!vid) return alert('請先在輸入框貼上有效的 YouTube 網址！');
-            if (ytState.playlist.some(x => x.id === vid)) return alert('此影片已在課堂清單中！');
+        function bufferToMp3(abuffer) {
+            if (typeof lamejs === 'undefined') throw new Error("lamejs 未載入成功，請檢查網路連線。");
+            const channels = abuffer.numberOfChannels;
+            const sampleRate = abuffer.sampleRate;
+            const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
+            const mp3Data = [];
 
-            const customTitle = prompt('請為這部課堂影片輸入備註名稱：', `課堂教材影片 (${ytState.playlist.length + 1})`);
-            if (customTitle === null) return;
+            const left = abuffer.getChannelData(0);
+            const right = channels > 1 ? abuffer.getChannelData(1) : left;
+            const sampleBlockSize = 1152;
+            const leftInt16 = new Int16Array(left.length);
+            const rightInt16 = new Int16Array(right.length);
 
-            ytState.playlist.unshift({
-                id: vid,
-                title: customTitle.trim() || `影片 ${vid}`
-            });
-            localStorage.setItem('edu_yt_playlist', JSON.stringify(ytState.playlist));
-            renderYtPlaylist();
+            for (let i = 0; i < left.length; i++) {
+                leftInt16[i] = left[i] < 0 ? left[i] * 32768 : left[i] * 32767;
+                rightInt16[i] = right[i] < 0 ? right[i] * 32768 : right[i] * 32767;
+            }
+
+            for (let i = 0; i < left.length; i += sampleBlockSize) {
+                const leftChunk = leftInt16.subarray(i, i + sampleBlockSize);
+                const rightChunk = rightInt16.subarray(i, i + sampleBlockSize);
+                const mp3buf = channels === 2 ? mp3encoder.encodeBuffer(leftChunk, rightChunk) : mp3encoder.encodeBuffer(leftChunk);
+                if (mp3buf.length > 0) mp3Data.push(mp3buf);
+            }
+            const mp3buf = mp3encoder.flush();
+            if (mp3buf.length > 0) mp3Data.push(mp3buf);
+            
+            return new Blob(mp3Data, {type: 'audio/mp3'});
+        }
+
+        const audioUI = {
+            upload: document.getElementById('uploadAreaAudio'),
+            input: document.getElementById('audioInput'),
+            previewCont: document.getElementById('audioPlayerContainer'),
+            fileName: document.getElementById('audioFileName'),
+            player: document.getElementById('audioPreview'),
+            progress: document.getElementById('audioProgress'),
+            progressText: document.getElementById('audioProgressText'),
+            btnDl: document.getElementById('btnDownloadAudio'),
+            btnReset: document.getElementById('btnResetAudio'),
+            fmtRadios: document.getElementsByName('audioFmt')
+        };
+        let currentAudioBuffer = null;
+        let convertedAudioBlob = null;
+        let originalAudioName = "";
+
+        audioUI.upload.addEventListener('click', () => audioUI.input.click());
+        audioUI.input.addEventListener('change', (e) => handleAudioUpload(e.target.files[0]));
+        audioUI.upload.addEventListener('dragover', (e) => { e.preventDefault(); audioUI.upload.classList.add('border-teal-500', 'bg-teal-50/50'); });
+        audioUI.upload.addEventListener('dragleave', (e) => { e.preventDefault(); audioUI.upload.classList.remove('border-teal-500', 'bg-teal-50/50'); });
+        audioUI.upload.addEventListener('drop', (e) => {
+            e.preventDefault(); audioUI.upload.classList.remove('border-teal-500', 'bg-teal-50/50');
+            if (e.dataTransfer.files.length > 0) handleAudioUpload(e.dataTransfer.files[0]);
         });
 
-        renderYtPlaylist();
+        audioUI.btnReset.addEventListener('click', () => {
+            audioUI.previewCont.classList.add('hidden');
+            audioUI.upload.classList.remove('hidden');
+            audioUI.btnDl.disabled = true;
+            audioUI.btnReset.disabled = true;
+            audioUI.player.src = "";
+            currentAudioBuffer = null;
+            convertedAudioBlob = null;
+            audioUI.input.value = '';
+        });
 
-        // 通用下載函式
-        function downloadFile(bytes, filename, mimeType) {
-            const blob = new Blob([bytes], { type: mimeType });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            link.click();
+        async function handleAudioUpload(file) {
+            if (!file || (!file.type.startsWith('audio/') && !file.type.startsWith('video/mp4') && !file.name.match(/\.(m4a|mp3|wav|ogg|aac|mp4)$/i))) {
+                return alert('請上傳支援的音訊或影片檔案！');
+            }
+            originalAudioName = file.name.replace(/\.[^/.]+$/, "");
+            audioUI.fileName.textContent = file.name;
+            audioUI.upload.classList.add('hidden');
+            audioUI.previewCont.classList.remove('hidden');
+            audioUI.previewCont.classList.add('flex');
+            audioUI.btnReset.disabled = false;
+            
+            audioUI.progress.classList.remove('hidden');
+            audioUI.progressText.textContent = '正在解碼音訊中...';
+            audioUI.player.classList.add('hidden');
+            
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                currentAudioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                await processAudioConversion();
+            } catch (e) {
+                alert("音訊解碼失敗：" + e.message);
+                audioUI.btnReset.click();
+            }
         }
+
+        async function processAudioConversion() {
+            if(!currentAudioBuffer) return;
+            audioUI.btnDl.disabled = true;
+            audioUI.player.classList.add('hidden');
+            audioUI.progress.classList.remove('hidden');
+            audioUI.progressText.textContent = '正在轉換格式...';
+
+            const fmt = Array.from(audioUI.fmtRadios).find(r => r.checked).value;
+            
+            setTimeout(() => {
+                try {
+                    if(fmt === 'wav') {
+                        convertedAudioBlob = bufferToWav(currentAudioBuffer);
+                    } else {
+                        convertedAudioBlob = bufferToMp3(currentAudioBuffer);
+                    }
+                    
+                    audioUI.player.src = URL.createObjectURL(convertedAudioBlob);
+                    audioUI.player.classList.remove('hidden');
+                    audioUI.btnDl.disabled = false;
+                    audioUI.progress.classList.add('hidden');
+                } catch(e) {
+                    alert('轉換失敗：' + e.message);
+                    audioUI.progress.classList.add('hidden');
+                }
+            }, 100);
+        }
+
+        Array.from(audioUI.fmtRadios).forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (currentAudioBuffer) processAudioConversion();
+            });
+        });
+
+        audioUI.btnDl.addEventListener('click', () => {
+            if (!convertedAudioBlob) return;
+            const fmt = Array.from(audioUI.fmtRadios).find(r => r.checked).value;
+            downloadFile(convertedAudioBlob, `${originalAudioName}_轉換版.${fmt}`, `audio/${fmt}`);
+        });
+
+
+        // ==========================================
+        // 模組 5：視訊格式轉換 (Video Converter via FFmpeg)
+        // ==========================================
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        let ffmpeg = null;
+
+        const vidUI = {
+            upload: document.getElementById('uploadAreaVideo'),
+            input: document.getElementById('videoInput'),
+            previewCont: document.getElementById('videoPlayerContainer'),
+            fileName: document.getElementById('videoFileName'),
+            player: document.getElementById('videoPreview'),
+            progress: document.getElementById('videoProgress'),
+            progressText: document.getElementById('videoProgressText'),
+            successMsg: document.getElementById('videoSuccessMsg'),
+            btnDl: document.getElementById('btnDownloadVideo'),
+            btnReset: document.getElementById('btnResetVideo'),
+            fmtRadios: document.getElementsByName('videoFmt'),
+            resSelect: document.getElementById('videoResSelect')
+        };
+
+        let currentVideoFile = null;
+        let convertedVideoBlob = null;
+        let originalVideoName = "";
+
+        vidUI.upload.addEventListener('click', () => vidUI.input.click());
+        vidUI.input.addEventListener('change', (e) => handleVideoUpload(e.target.files[0]));
+        vidUI.upload.addEventListener('dragover', (e) => { e.preventDefault(); vidUI.upload.classList.add('border-cyan-500', 'bg-cyan-50/50'); });
+        vidUI.upload.addEventListener('dragleave', (e) => { e.preventDefault(); vidUI.upload.classList.remove('border-cyan-500', 'bg-cyan-50/50'); });
+        vidUI.upload.addEventListener('drop', (e) => {
+            e.preventDefault(); vidUI.upload.classList.remove('border-cyan-500', 'bg-cyan-50/50');
+            if (e.dataTransfer.files.length > 0) handleVideoUpload(e.dataTransfer.files[0]);
+        });
+
+        vidUI.btnReset.addEventListener('click', () => {
+            vidUI.previewCont.classList.add('hidden');
+            vidUI.upload.classList.remove('hidden');
+            vidUI.btnDl.disabled = true;
+            vidUI.btnReset.disabled = true;
+            vidUI.player.src = "";
+            vidUI.successMsg.classList.add('hidden');
+            vidUI.progress.classList.add('hidden');
+            currentVideoFile = null;
+            convertedVideoBlob = null;
+            vidUI.input.value = '';
+        });
+
+        async function initFFmpeg() {
+            if (ffmpeg === null) {
+                ffmpeg = createFFmpeg({
+                    log: true,
+                    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+                });
+                ffmpeg.setProgress(({ ratio }) => {
+                    const percent = Math.round(ratio * 100);
+                    vidUI.progressText.textContent = `正在處理中... ${percent}%`;
+                });
+                await ffmpeg.load();
+            }
+        }
+
+        async function handleVideoUpload(file) {
+            if (!file || !file.type.startsWith('video/')) {
+                return alert('請上傳支援的影片檔案！');
+            }
+            
+            // 檔名設定
+            originalVideoName = file.name.replace(/\.[^/.]+$/, "");
+            vidUI.fileName.textContent = file.name;
+            currentVideoFile = file;
+
+            // UI 切換
+            vidUI.upload.classList.add('hidden');
+            vidUI.previewCont.classList.remove('hidden');
+            vidUI.previewCont.classList.add('flex');
+            vidUI.btnReset.disabled = false;
+            vidUI.successMsg.classList.add('hidden');
+            
+            // 開始轉換
+            await processVideoConversion();
+        }
+
+        async function processVideoConversion() {
+            if (!currentVideoFile) return;
+
+            vidUI.btnDl.disabled = true;
+            vidUI.player.classList.add('hidden');
+            vidUI.progress.classList.remove('hidden');
+            vidUI.successMsg.classList.add('hidden');
+            vidUI.progressText.textContent = '正在載入轉換核心...';
+
+            try {
+                await initFFmpeg();
+
+                const ext = currentVideoFile.name.split('.').pop();
+                const inputName = `input.${ext}`;
+                const fmt = Array.from(vidUI.fmtRadios).find(r => r.checked).value;
+                const outputName = `output.${fmt}`;
+                const res = vidUI.resSelect.value;
+
+                vidUI.progressText.textContent = '讀取檔案中...';
+                ffmpeg.FS('writeFile', inputName, await fetchFile(currentVideoFile));
+
+                // 組合 FFmpeg 參數
+                let ffmpegArgs = ['-i', inputName];
+                
+                // 畫質設定
+                if (res !== 'original') {
+                    // 將寬度等比例縮放，高度設定為指定的解析度
+                    ffmpegArgs.push('-vf', `scale=-2:${res}`);
+                }
+
+                // 格式特定設定
+                if (fmt === 'mp4') {
+                    ffmpegArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28', '-c:a', 'aac');
+                } else if (fmt === 'webm') {
+                    ffmpegArgs.push('-c:v', 'libvpx-vp9', '-b:v', '1M', '-c:a', 'libopus');
+                } else if (fmt === 'gif') {
+                    // GIF 特殊處理以降低檔案大小與避免當機
+                    ffmpegArgs.push('-fps', '10', '-loop', '0');
+                }
+
+                ffmpegArgs.push(outputName);
+
+                vidUI.progressText.textContent = '開始轉換 (這可能需要幾分鐘)...';
+                await ffmpeg.run(...ffmpegArgs);
+
+                const data = ffmpeg.FS('readFile', outputName);
+                const mimeTypes = { 'mp4': 'video/mp4', 'webm': 'video/webm', 'gif': 'image/gif' };
+                convertedVideoBlob = new Blob([data.buffer], { type: mimeTypes[fmt] });
+                
+                const url = URL.createObjectURL(convertedVideoBlob);
+                vidUI.player.src = url;
+                vidUI.player.classList.remove('hidden');
+                
+                // 清理記憶體
+                ffmpeg.FS('unlink', inputName);
+                ffmpeg.FS('unlink', outputName);
+
+                vidUI.btnDl.disabled = false;
+                vidUI.progress.classList.add('hidden');
+                vidUI.successMsg.classList.remove('hidden');
+
+            } catch (error) {
+                console.error(error);
+                vidUI.progress.classList.add('hidden');
+                alert("轉換失敗！\n您的瀏覽器可能不支援 SharedArrayBuffer 記憶體共享技術，或是檔案過大導致記憶體不足。請嘗試較小的影片或使用其他瀏覽器。");
+                vidUI.btnReset.click();
+            }
+        }
+
+        // 切換設定時重新轉換
+        Array.from(vidUI.fmtRadios).forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (currentVideoFile) processVideoConversion();
+            });
+        });
+        vidUI.resSelect.addEventListener('change', () => {
+            if (currentVideoFile) processVideoConversion();
+        });
+
+        // 下載影片
+        vidUI.btnDl.addEventListener('click', () => {
+            if (!convertedVideoBlob) return;
+            const fmt = Array.from(vidUI.fmtRadios).find(r => r.checked).value;
+            const mimeTypes = { 'mp4': 'video/mp4', 'webm': 'video/webm', 'gif': 'image/gif' };
+            downloadFile(convertedVideoBlob, `${originalVideoName}_轉換版.${fmt}`, mimeTypes[fmt]);
+        });
+
     </script>
 </body>
 </html>
