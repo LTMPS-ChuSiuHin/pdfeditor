@@ -18,6 +18,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
     
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -28,7 +30,6 @@
             background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 50%, #f5f3ff 100%);
         }
         
-        /* 特效與動畫 */
         @keyframes fadeInScale {
             0% { opacity: 0; transform: scale(0.98) translateY(6px); }
             100% { opacity: 1; transform: scale(1) translateY(0); }
@@ -77,7 +78,6 @@
         .page-thumbnail:active { cursor: grabbing; }
         .hide { display: none !important; }
         
-        /* 預覽背景樣式 */
         .bg-checkerboard {
             background-color: #ffffff;
             background-image: 
@@ -96,7 +96,6 @@
             background-size: 100% 28px;
         }
 
-        /* 劇院關燈模式遮罩 */
         .cinema-dim-active {
             background-color: #090d16 !important;
             color: #f8fafc !important;
@@ -192,7 +191,6 @@
             <!-- 左側工具列 -->
             <aside class="w-28 bg-white border-r flex flex-col items-center py-3 px-2 space-y-3 shrink-0 shadow-lg z-10 overflow-y-auto">
                 
-                <!-- 顏色與粗細設定 -->
                 <div class="w-full flex flex-col items-center bg-slate-50 p-2 rounded-xl border border-slate-200/80">
                     <div class="flex items-center space-x-2 mb-2">
                         <input type="color" id="colorPicker" value="#ef4444" class="w-7 h-7 rounded-lg cursor-pointer border-0 p-0 shadow-sm" title="選擇顏色">
@@ -207,7 +205,6 @@
                     </div>
                 </div>
 
-                <!-- 繪圖與選取工具 -->
                 <div class="w-full">
                     <div class="text-[10px] font-bold text-gray-400 text-center mb-1">筆刷與工具</div>
                     <div class="grid grid-cols-2 gap-1.5 justify-items-center">
@@ -218,7 +215,6 @@
                     </div>
                 </div>
 
-                <!-- 幾何圖形工具 -->
                 <div class="w-full">
                     <div class="text-[10px] font-bold text-gray-400 text-center mb-1">插入幾何圖形</div>
                     <div class="grid grid-cols-2 gap-1.5 justify-items-center">
@@ -229,7 +225,6 @@
                     </div>
                 </div>
 
-                <!-- 圖片與印章處理 -->
                 <div class="w-full">
                     <div class="text-[10px] font-bold text-gray-400 text-center mb-1">圖片與進階</div>
                     <div class="grid grid-cols-2 gap-1.5 justify-items-center">
@@ -248,7 +243,6 @@
 
                 <hr class="w-full border-gray-200">
 
-                <!-- 刪除與復原 -->
                 <div class="grid grid-cols-2 gap-1.5 justify-items-center w-full">
                     <button id="btnDeleteObj" class="tool-btn w-10 h-10 rounded-xl border border-red-200 hover:bg-red-50 text-red-500 flex items-center justify-center" title="刪除選中物件 (Delete)"><i class="fa-solid fa-trash-can"></i></button>
                     <button id="btnUndo" class="tool-btn w-10 h-10 rounded-xl border hover:bg-gray-100 flex items-center justify-center disabled:opacity-40" title="復原上一步 (Undo)"><i class="fa-solid fa-rotate-left"></i></button>
@@ -257,7 +251,6 @@
 
             <!-- 中間畫布區 -->
             <div class="flex-1 overflow-auto p-6 flex flex-col items-center relative" id="annotateWorkspace">
-                <!-- 狀態提示橫幅 -->
                 <div id="stampModeBanner" class="hidden sticky top-0 z-30 mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2 rounded-full shadow-lg flex items-center space-x-3 text-sm font-bold animate-bounce">
                     <span><i class="fa-solid fa-stamp mr-1"></i> 連續蓋章模式：請直接在作業上點擊蓋下「<span id="currentStampIcon">✔</span>」</span>
                     <button id="btnExitStampMode" class="bg-white/20 hover:bg-white/30 px-2.5 py-0.5 rounded-full text-xs transition">結束模式</button>
@@ -280,10 +273,9 @@
                 </div>
             </div>
 
-            <!-- 右側面板 (含頁面導航、放大縮小檢視與快速圖章) -->
+            <!-- 右側面板 -->
             <aside id="rightPanelAnnotate" class="w-64 bg-white border-l p-4 flex flex-col hidden shadow-lg z-10 overflow-y-auto">
                 
-                <!-- 新增：畫面放大縮小控制 (Zoom Control) -->
                 <div class="mb-5">
                     <h3 class="font-bold text-xs text-gray-500 uppercase tracking-wider mb-2"><i class="fa-solid fa-magnifying-glass mr-1 text-blue-500"></i> 畫面縮放檢視</h3>
                     <div class="flex items-center justify-between bg-slate-100 p-1.5 rounded-xl border">
@@ -300,7 +292,6 @@
                     <button id="nextPage" class="w-8 h-8 bg-white border rounded-lg shadow-sm hover:bg-gray-50"><i class="fa-solid fa-chevron-right text-xs"></i></button>
                 </div>
 
-                <!-- 快速批改圖章庫 -->
                 <div class="mb-5">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="font-bold text-xs text-gray-500 uppercase tracking-wider"><i class="fa-solid fa-stamp mr-1 text-red-500"></i> 快速批改圖章</h3>
@@ -338,13 +329,11 @@
         <!-- ========================================== -->
         <section id="viewBgRemover" class="view-animate absolute inset-0 flex h-full hide">
             
-            <!-- 左側控制面板 -->
             <aside class="w-80 bg-white border-r p-5 flex flex-col shadow-lg z-10 overflow-y-auto">
                 <h2 class="text-lg font-bold text-purple-700 mb-3 flex items-center border-b pb-2">
                     <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> 圖片去背(BETA)
                 </h2>
 
-                <!-- 1. 去背模式選擇 -->
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-gray-700 mb-1.5">1. 去背範圍模式</label>
                     <div class="grid grid-cols-2 gap-1.5 bg-gray-100 p-1 rounded-xl">
@@ -357,7 +346,6 @@
                     </div>
                 </div>
 
-                <!-- 2. 目標顏色選擇 -->
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-gray-700 mb-1.5">2. 鎖定要去除的背景色</label>
                     <div class="flex space-x-2">
@@ -374,7 +362,6 @@
                     </div>
                 </div>
 
-                <!-- 3. 極細微調滑桿 (0.0 ~ 25.0, Step 0.1) -->
                 <div class="mb-4 space-y-3 bg-purple-50/60 p-3 rounded-xl border border-purple-100">
                     <div>
                         <div class="flex justify-between items-center text-xs font-bold text-gray-700 mb-1">
@@ -414,7 +401,6 @@
                     </div>
                 </div>
 
-                <!-- 進階強化與自動裁邊 -->
                 <div class="mb-4 space-y-2 bg-gray-50 p-2.5 rounded-xl border text-xs">
                     <label class="flex items-center space-x-2 cursor-pointer">
                         <input type="checkbox" id="chkEnhanceText" class="w-3.5 h-3.5 accent-purple-600 rounded">
@@ -451,7 +437,6 @@
                 </div>
 
                 <div id="bgPreviewContainer" class="hidden flex-col items-center w-full h-full">
-                    <!-- 預覽工具列：切換檢查底色 + 放大縮小檢視控制 -->
                     <div class="mb-3 flex flex-wrap items-center justify-between gap-3 bg-white px-4 py-2.5 rounded-xl shadow-sm border w-full max-w-4xl shrink-0">
                         <div class="flex items-center space-x-1.5">
                             <span class="text-xs font-bold text-gray-600"><i class="fa-solid fa-palette mr-1 text-purple-600"></i>底色：</span>
@@ -461,7 +446,6 @@
                             <button type="button" class="preview-bg-btn px-2.5 py-1 text-xs rounded-lg border bg-white text-gray-700 hover:bg-gray-50" data-bg="bg-white-preview">純白</button>
                         </div>
 
-                        <!-- 新增：去背圖像放大縮小控制列 -->
                         <div class="flex items-center space-x-1.5 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
                             <span class="text-xs font-bold text-purple-800"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>放大查看：</span>
                             <button type="button" id="btnBgZoomOut" class="w-6 h-6 bg-white border rounded hover:bg-purple-100 text-xs font-bold flex items-center justify-center">-</button>
@@ -475,7 +459,6 @@
                         <i class="fa-solid fa-hand-pointer mr-1"></i> 請直接點擊下方圖片中您想要去除的背景區域（放大狀態下同樣精準）！
                     </div>
 
-                    <!-- 支援捲動與放大的畫布外框 -->
                     <div id="bgCanvasWrapper" class="border-2 border-gray-300 rounded-2xl overflow-auto shadow-inner bg-checkerboard w-full max-w-4xl flex-1 flex items-center justify-center p-6 transition-colors">
                         <canvas id="bgCanvas" class="block transition-all duration-150 shadow-sm"></canvas>
                     </div>
@@ -484,72 +467,116 @@
         </section>
 
         <!-- ========================================== -->
-        <!-- 模組 4：無廣告 YouTube 播放器 (Classroom Player) -->
+        <!-- 模組 4：無廣告 YouTube 播放器 (進階去廣告與多引擎版) -->
         <!-- ========================================== -->
         <section id="viewYoutube" class="view-animate absolute inset-0 flex h-full hide transition-colors duration-500">
             
             <!-- 主播放器區 -->
-            <div class="flex-1 flex flex-col p-6 overflow-y-auto items-center">
+            <div class="flex-1 flex flex-col p-5 overflow-y-auto items-center">
                 
                 <!-- 頂部網址輸入與控制列 -->
-                <div class="w-full max-w-5xl bg-white p-4 rounded-2xl shadow-md border border-gray-200/80 mb-5 flex flex-wrap gap-3 items-center z-20">
-                    <div class="flex items-center text-red-600 font-black text-lg mr-1">
-                        <i class="fa-brands fa-youtube text-2xl mr-2"></i> 課堂純淨播放
+                <div class="w-full max-w-5xl bg-white p-3.5 rounded-2xl shadow-md border border-gray-200/80 mb-3 flex flex-wrap gap-2.5 items-center z-20">
+                    <div class="flex items-center text-red-600 font-black text-base mr-1">
+                        <i class="fa-brands fa-youtube text-2xl mr-1.5"></i> 課堂播放器
                     </div>
-                    <div class="flex-1 min-w-[260px] relative">
-                        <input type="text" id="ytUrlInput" placeholder="貼上 YouTube 影片網址、短網址 (youtu.be) 或 Shorts 連結..." class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-red-500 focus:bg-white transition">
-                        <i class="fa-solid fa-link absolute left-3 top-3 text-gray-400 text-sm"></i>
+                    <div class="flex-1 min-w-[220px] relative">
+                        <input type="text" id="ytUrlInput" placeholder="貼上 YouTube 網址、短網址 (youtu.be) 或 Shorts..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-red-500 focus:bg-white transition">
+                        <i class="fa-solid fa-link absolute left-3 top-2.5 text-gray-400 text-sm"></i>
                     </div>
-                    <button id="btnLoadYt" class="px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold rounded-xl shadow hover:opacity-95 transition text-sm flex items-center">
-                        <i class="fa-solid fa-play mr-1.5"></i> 立即播放
+                    <button id="btnLoadYt" class="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold rounded-xl shadow hover:opacity-95 transition text-sm flex items-center">
+                        <i class="fa-solid fa-play mr-1.5"></i> 載入影片
                     </button>
-                    <button id="btnAddToPlaylist" class="px-3.5 py-2.5 bg-amber-50 text-amber-700 border border-amber-200 font-bold rounded-xl hover:bg-amber-100 transition text-sm flex items-center" title="將目前影片收藏至右側課堂清單">
+                    <button id="btnAddToPlaylist" class="px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 font-bold rounded-xl hover:bg-amber-100 transition text-sm flex items-center" title="將目前影片收藏至右側課堂清單">
                         <i class="fa-solid fa-bookmark mr-1"></i> 收藏
                     </button>
+                    <div class="h-5 w-px bg-gray-200 mx-0.5"></div>
+                    <!-- 新增：本地影片檔直連播放 (100% 零廣告) -->
+                    <button id="btnLocalVideo" class="px-3 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold rounded-xl hover:bg-indigo-100 transition text-xs flex items-center" title="直接播放電腦中的 MP4 影片檔，100% 絕對無廣告！">
+                        <i class="fa-solid fa-folder-open mr-1.5"></i> 播本地 MP4
+                    </button>
+                    <input type="file" id="localVideoInput" accept="video/*" class="hidden">
                 </div>
 
-                <!-- 影片嵌入視窗與多線路控制 -->
-                <div class="w-full max-w-5xl flex-1 flex flex-col">
-                    <div class="flex flex-wrap justify-between items-center mb-2.5 gap-2 px-1">
-                        <div class="flex items-center space-x-2 text-xs">
-                            <span class="font-bold text-gray-500"><i class="fa-solid fa-shield-cat mr-1 text-emerald-600"></i>淨化線路切換：</span>
-                            <button type="button" class="yt-engine-btn px-3 py-1 rounded-full font-bold bg-red-600 text-white shadow-sm transition" data-engine="nocookie">
-                                線路 1：官方隱私無追蹤 (推薦)
-                            </button>
-                            <button type="button" class="yt-engine-btn px-3 py-1 rounded-full font-bold bg-white text-gray-600 border hover:bg-gray-100 transition" data-engine="invidious" title="若官方線路仍有片頭廣告，可切換至開源無廣告線路">
-                                線路 2：Invidious 純淨鏡像
-                            </button>
-                        </div>
+                <!-- 進階控制列：線路切換 + 廣告快轉跳過 + 起訖時間設定 -->
+                <div class="w-full max-w-5xl bg-white/80 backdrop-blur-xs px-4 py-2.5 rounded-xl border border-gray-200/70 mb-3 flex flex-wrap justify-between items-center gap-2 text-xs z-20">
+                    <!-- 左：線路與節點選擇 -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-bold text-gray-600"><i class="fa-solid fa-server mr-1 text-blue-600"></i>播放引擎：</span>
+                        <select id="ytEngineSelect" class="bg-white border border-gray-300 rounded-lg px-2.5 py-1 font-bold text-gray-700 focus:outline-none focus:border-blue-500">
+                            <option value="ytapi">線路 1：YouTube API 智慧控制 (支援快轉略過)</option>
+                            <option value="piped_kavin">線路 2：Piped 純淨無廣告 (kavin.rocks)</option>
+                            <option value="inv_nadeko">線路 3：Invidious 無廣告節點 A (nadeko.net)</option>
+                            <option value="inv_nerdvpn">線路 4：Invidious 無廣告節點 B (nerdvpn.de)</option>
+                            <option value="inv_jing">線路 5：Invidious 無廣告節點 C (jing.rocks)</option>
+                        </select>
 
-                        <div class="flex items-center space-x-2">
-                            <label class="flex items-center space-x-1 text-xs font-bold text-gray-600 bg-white px-3 py-1 rounded-full border cursor-pointer">
-                                <input type="checkbox" id="chkYtLoop" class="accent-red-600">
-                                <span>單曲循環播放</span>
-                            </label>
-                            <button id="btnCinemaDim" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-amber-300 hover:bg-slate-700 transition flex items-center shadow-sm">
-                                <i class="fa-solid fa-lightbulb mr-1.5"></i> 關燈專注模式
-                            </button>
-                        </div>
+                        <!-- 當遇到廣告時的一鍵強制略過按鈕 -->
+                        <button id="btnSkipAd" class="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-lg shadow-xs hover:opacity-95 transition flex items-center" title="若片頭出現廣告，點擊此處強制將時間軸推至正片或16倍速快轉廣告">
+                            <i class="fa-solid fa-forward-fast mr-1"></i> 略過片頭 / 廣告快轉
+                        </button>
                     </div>
 
-                    <!-- 16:9 響應式黑板螢幕外框 -->
+                    <!-- 右：自訂起訖秒數與關燈 -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex items-center space-x-1 bg-slate-100 px-2 py-1 rounded-lg border" title="設定從第幾秒開始播放，可直接避開片頭廣告或冗長前奏">
+                            <span class="text-gray-500 font-semibold">起點(秒):</span>
+                            <input type="number" id="ytStartSec" min="0" value="0" class="w-12 bg-white border rounded px-1 py-0.5 text-center font-mono text-xs">
+                            <span class="text-gray-500 font-semibold ml-1">終點:</span>
+                            <input type="number" id="ytEndSec" min="0" placeholder="選填" class="w-14 bg-white border rounded px-1 py-0.5 text-center font-mono text-xs">
+                        </div>
+
+                        <label class="flex items-center space-x-1 font-bold text-gray-600 bg-white px-2.5 py-1 rounded-lg border cursor-pointer">
+                            <input type="checkbox" id="chkYtLoop" class="accent-red-600">
+                            <span>循環</span>
+                        </label>
+
+                        <button id="btnCinemaDim" class="px-3 py-1 rounded-lg font-bold bg-slate-800 text-amber-300 hover:bg-slate-700 transition flex items-center shadow-xs">
+                            <i class="fa-solid fa-lightbulb mr-1"></i> 關燈
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 16:9 響應式黑板螢幕外框 -->
+                <div class="w-full max-w-5xl flex-1 flex flex-col">
                     <div class="relative w-full bg-slate-950 rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-800 aspect-video flex items-center justify-center">
                         <!-- 尚未載入影片時的引導畫面 -->
                         <div id="ytEmptyState" class="text-center p-8 text-slate-400">
-                            <div class="w-20 h-20 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-4 text-red-500 shadow-lg">
-                                <i class="fa-brands fa-youtube text-4xl"></i>
+                            <div class="w-16 h-16 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-3 text-red-500 shadow-lg">
+                                <i class="fa-brands fa-youtube text-3xl"></i>
                             </div>
-                            <h3 class="text-xl font-bold text-white mb-2">課堂無干擾 YouTube 播放器</h3>
-                            <p class="text-sm text-slate-400 max-w-md mx-auto">
-                                採用 <code class="text-emerald-400">youtube-nocookie</code> 教育嵌入協定，自動屏蔽片尾演算法推薦牆與追蹤廣告，讓學生專注於課堂教材。
-                            </p>
+                            <h3 class="text-lg font-bold text-white mb-2">課堂多引擎 YouTube 與本地播放器</h3>
+                            <div class="text-xs text-slate-400 max-w-lg mx-auto space-y-1.5 text-left bg-slate-900/90 p-4 rounded-xl border border-slate-800">
+                                <div>💡 <strong>為什麼官方線路有時仍有廣告？</strong> YouTube 現已對所有嵌入網址強制派發廣告。若出現片頭廣告，請點擊上方橘色 <strong>「⏩ 略過片頭 / 廣告快轉」</strong> 按鈕，或設定「起點(秒)」為 <code>5</code> 秒直接切入正片！</div>
+                                <div>💡 <strong>線路 2~5 無回應怎麼辦？</strong> 第三方開源鏡像偶爾會被 YouTube 阻擋，可從下拉選單切換不同國家節點，或點擊右下方「在獨立無廣告視窗開啟」。</div>
+                                <div>💡 <strong>終極零廣告方案：</strong> 若瀏覽器安裝免費的 <a href="https://ublockorigin.com/" target="_blank" class="text-blue-400 underline">uBlock Origin</a> 擴充功能，或使用上方「📁 播本地 MP4」，即可達成 100% 永久零廣告！</div>
+                            </div>
                         </div>
-                        <iframe id="ytIframe" class="w-full h-full hidden" src="" title="YouTube Classroom Player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+                        <!-- 1. 官方 YouTube API 容器 -->
+                        <div id="ytApiPlayerContainer" class="w-full h-full hidden">
+                            <div id="ytApiDiv" class="w-full h-full"></div>
+                        </div>
+
+                        <!-- 2. 第三方 Piped / Invidious Iframe 容器 -->
+                        <iframe id="ytMirrorIframe" class="w-full h-full hidden" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+                        <!-- 3. 本地 MP4 Video 播放器 -->
+                        <video id="localVideoPlayer" class="w-full h-full hidden bg-black" controls controlsList="nodownload"></video>
+                    </div>
+
+                    <!-- 底部輔助狀態與外部無廣告跳轉連結 -->
+                    <div class="mt-2 flex justify-between items-center px-2 text-xs text-gray-500">
+                        <span id="ytStatusText">準備就緒</span>
+                        <div class="space-x-3">
+                            <a id="linkExternalClean" href="#" target="_blank" class="hidden text-blue-600 hover:underline font-bold">
+                                <i class="fa-solid fa-up-right-from-square mr-1"></i>若鏡像無法嵌入，點此在新分頁開啟純淨無廣告版
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 右側：課堂播放清單 (儲存於 LocalStorage) -->
+            <!-- 右側：課堂播放清單 -->
             <aside class="w-72 bg-white border-l p-4 flex flex-col shadow-lg z-10">
                 <div class="flex justify-between items-center border-b pb-3 mb-3">
                     <h3 class="font-bold text-gray-800 text-sm flex items-center">
@@ -559,19 +586,16 @@
                 </div>
                 <p class="text-xs text-gray-400 mb-3">準備好的教學或音樂示範影片可收藏於此，下次開啟網頁依然保留。</p>
                 
-                <div id="ytPlaylistContainer" class="flex-1 overflow-y-auto space-y-2 pr-1">
-                    <!-- 動態生成播放清單項目 -->
-                </div>
+                <div id="ytPlaylistContainer" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
             </aside>
         </section>
 
     </main>
 
     <!-- ========================================== -->
-    <!-- 彈窗 1：高解析度放大檢視圖像燈箱 (Image/Page Zoom Lightbox) -->
+    <!-- 彈窗 1：高解析度放大檢視圖像燈箱 -->
     <!-- ========================================== -->
     <div id="zoomLightboxModal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center z-50 p-4">
-        <!-- 頂部控制列 -->
         <div class="bg-white/10 backdrop-blur-md border border-white/20 text-white px-5 py-2.5 rounded-full mb-4 flex items-center space-x-4 shadow-xl">
             <span id="lightboxTitle" class="text-sm font-bold text-blue-200 mr-2">頁面預覽</span>
             <button id="btnLightboxZoomOut" class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center transition" title="縮小"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
@@ -583,14 +607,13 @@
             </button>
         </div>
 
-        <!-- 影像捲動容器 -->
         <div class="flex-1 w-full overflow-auto flex items-center justify-center p-4" id="lightboxBody">
             <img id="lightboxImg" src="" alt="Zoomed Preview" class="bg-white shadow-2xl rounded transition-all duration-150 max-w-none" style="width: 750px;">
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- 彈窗 2：分拆匯出設定 (Split Options Modal)   -->
+    <!-- 彈窗 2：分拆匯出設定 -->
     <!-- ========================================== -->
     <div id="splitModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] flex flex-col view-animate">
@@ -639,7 +662,7 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- 彈窗 3：權限警告彈窗 (Security Modal)        -->
+    <!-- 彈窗 3：權限警告彈窗 -->
     <!-- ========================================== -->
     <div id="securityModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-2xl max-w-lg shadow-2xl relative view-animate">
@@ -710,7 +733,7 @@
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
 
-        // === 高解析度放大檢視燈箱 (Zoom Lightbox) ===
+        // === 高解析度放大檢視燈箱 ===
         const lightbox = {
             modal: document.getElementById('zoomLightboxModal'),
             img: document.getElementById('lightboxImg'),
@@ -781,10 +804,10 @@
         tabs.youtube.addEventListener('click', () => switchTab('youtube'));
 
         // ==========================================
-        // 模組 1：頁面管理邏輯 (含點擊放大檢視單頁)
+        // 模組 1：頁面管理邏輯
         // ==========================================
         let organizeFiles = []; 
-        let organizePdfDocs = []; // 儲存 PDF.js doc 實例以供高解析度放大渲染
+        let organizePdfDocs = [];
         const pagesGrid = document.getElementById('pagesGrid');
         const organizeDropZone = document.getElementById('organizeDropZone');
         const emptyOrganizeState = document.getElementById('emptyOrganizeState');
@@ -858,7 +881,6 @@
             canvas.style.transition = "transform 0.3s ease";
             rotateWrapper.appendChild(canvas);
 
-            // 雙擊縮圖直接放大預覽
             const triggerZoomPreview = async () => {
                 const hiPage = await organizePdfDocs[fileIndex].getPage(pageNum);
                 const hiViewport = hiPage.getViewport({ scale: 2.0 });
@@ -1128,14 +1150,14 @@
 
 
         // ==========================================
-        // 模組 2：批改及簽署邏輯 (含無損放大縮小檢視)
+        // 模組 2：批改及簽署邏輯
         // ==========================================
         const BASE_ANNOTATE_SCALE = 1.5;
         const annotateState = {
             pdfBytes: null, pdfDocJS: null, pdfDocLib: null,
             pageNum: 1, totalPages: 0, fabricCanvas: null, pageAnnotations: {},
             undoStack: [], isUndoAction: false, 
-            zoomRatio: 1.0, // 1.0 = 100%, 支援 0.5 ~ 2.5
+            zoomRatio: 1.0,
             baseWidth: 0, baseHeight: 0,
             currentTool: 'pen',
             activeStamp: null
@@ -1167,13 +1189,11 @@
             exitStampMode();
         });
 
-        // 批改區無損放大縮小控制
         async function applyAnnotateZoom(newRatio) {
             if (!annotateState.pdfDocJS) return;
             annotateState.zoomRatio = Math.max(0.5, Math.min(2.5, newRatio));
             uia.zoomVal.textContent = `${Math.round(annotateState.zoomRatio * 100)}%`;
 
-            // 儲存當前畫布物件，重新渲染底層高解析度 PDF，並套用 Fabric 縮放矩陣
             const page = await annotateState.pdfDocJS.getPage(annotateState.pageNum);
             const currentScale = BASE_ANNOTATE_SCALE * annotateState.zoomRatio;
             const viewport = page.getViewport({ scale: currentScale });
@@ -1227,8 +1247,6 @@
             annotateState.fabricCanvas.on('mouse:down', function(opt) {
                 if (annotateState.currentTool === 'stamp' && annotateState.activeStamp) {
                     if (opt.target) return; 
-                    
-                    // getPointer 會自動換算當前 Zoom 比例下的正確座標
                     const pointer = annotateState.fabricCanvas.getPointer(opt.e);
                     const size = parseInt(document.getElementById('stampSize').value, 10);
                     const st = annotateState.activeStamp;
@@ -1238,22 +1256,14 @@
                         stampObj = new fabric.IText(` ${st.text} `, {
                             left: pointer.x, top: pointer.y,
                             originX: 'center', originY: 'center',
-                            fontSize: size * 0.75,
-                            fill: st.color,
-                            fontFamily: 'serif',
-                            fontWeight: 'bold',
-                            borderColor: st.color,
-                            backgroundColor: 'rgba(255,255,255,0.75)',
-                            stroke: st.color,
-                            strokeWidth: 1.5
+                            fontSize: size * 0.75, fill: st.color, fontFamily: 'serif', fontWeight: 'bold',
+                            borderColor: st.color, backgroundColor: 'rgba(255,255,255,0.75)', stroke: st.color, strokeWidth: 1.5
                         });
                     } else {
                         stampObj = new fabric.Text(st.text, {
                             left: pointer.x, top: pointer.y,
                             originX: 'center', originY: 'center',
-                            fontSize: size,
-                            fill: st.color,
-                            fontWeight: 'bold'
+                            fontSize: size, fill: st.color, fontWeight: 'bold'
                         });
                     }
 
@@ -1569,7 +1579,6 @@
             });
         }
 
-        // 匯出批改後 PDF (確保不受當前 Zoom 縮放影響，精準對齊 100% 原始尺寸)
         document.getElementById('btnExportAnnotated').addEventListener('click', async () => {
             if (!annotateState.pdfDocLib) return;
             exitStampMode();
@@ -1588,7 +1597,7 @@
                         const baseVp = jsPage.getViewport({ scale: BASE_ANNOTATE_SCALE });
                         
                         await new Promise(r => exCanvas.loadFromJSON(annotateState.pageAnnotations[i+1], r));
-                        exCanvas.setZoom(1.0); // 匯出時強制重設為 1.0 標準比例
+                        exCanvas.setZoom(1.0);
                         exCanvas.setWidth(baseVp.width); 
                         exCanvas.setHeight(baseVp.height); 
                         exCanvas.renderAll();
@@ -1603,7 +1612,7 @@
 
 
         // ==========================================
-        // 模組 3：圖片去背(BETA) - 含像素級放大檢視 (50% ~ 400%)
+        // 模組 3：圖片去背(BETA)
         // ==========================================
         const bgUI = {
             uploadArea: document.getElementById('uploadAreaBg'),
@@ -1642,7 +1651,7 @@
         let isEyedropperMode = false;
         let bgRemovalMode = 'global';
         let floodSeedPoints = [];
-        let bgPreviewZoom = 1.0; // 去背預覽放大倍率 (0.5 ~ 4.0)
+        let bgPreviewZoom = 1.0;
 
         function applyBgPreviewZoom(newZoom, fitMode = false) {
             if (!bgUI.canvas.width) return;
@@ -1860,7 +1869,6 @@
             bgUI.canvas.height = finalCanvas.height;
             bgUI.canvas.getContext('2d').drawImage(finalCanvas, 0, 0);
 
-            // 若目前處於手動放大檢視狀態，同步更新 CSS 寬高
             if (bgUI.zoomVal.textContent !== '適應') {
                 applyBgPreviewZoom(bgPreviewZoom, false);
             }
@@ -1995,11 +2003,17 @@
 
 
         // ==========================================
-        // 模組 4：無廣告 YouTube 播放器邏輯
+        // 模組 4：無廣告 YouTube 播放器 (API 智慧略過 + 多節點鏡像 + 本地 MP4)
         // ==========================================
+        let ytApiPlayer = null;
+        let isYtApiReady = false;
+        window.onYouTubeIframeAPIReady = function() {
+            isYtApiReady = true;
+        };
+
         const ytState = {
             currentVideoId: null,
-            engine: 'nocookie', // 'nocookie' 或 'invidious'
+            engine: 'ytapi',
             playlist: JSON.parse(localStorage.getItem('edu_yt_playlist') || '[]')
         };
 
@@ -2007,15 +2021,31 @@
             input: document.getElementById('ytUrlInput'),
             btnLoad: document.getElementById('btnLoadYt'),
             btnAdd: document.getElementById('btnAddToPlaylist'),
-            iframe: document.getElementById('ytIframe'),
-            empty: document.getElementById('ytEmptyState'),
+            btnLocal: document.getElementById('btnLocalVideo'),
+            localInput: document.getElementById('localVideoInput'),
+            engineSelect: document.getElementById('ytEngineSelect'),
+            btnSkipAd: document.getElementById('btnSkipAd'),
+            startSec: document.getElementById('ytStartSec'),
+            endSec: document.getElementById('ytEndSec'),
             chkLoop: document.getElementById('chkYtLoop'),
             btnDim: document.getElementById('btnCinemaDim'),
+            empty: document.getElementById('ytEmptyState'),
+            apiContainer: document.getElementById('ytApiPlayerContainer'),
+            mirrorIframe: document.getElementById('ytMirrorIframe'),
+            localPlayer: document.getElementById('localVideoPlayer'),
+            statusText: document.getElementById('ytStatusText'),
+            linkExternal: document.getElementById('linkExternalClean'),
             playlistContainer: document.getElementById('ytPlaylistContainer'),
             playlistCount: document.getElementById('ytPlaylistCount')
         };
 
-        // 智慧解析各種 YouTube 網址格式 (watch?v=, youtu.be/, shorts/, embed/)
+        const MIRROR_HOSTS = {
+            piped_kavin: 'https://piped.kavin.rocks',
+            inv_nadeko: 'https://inv.nadeko.net',
+            inv_nerdvpn: 'https://invidious.nerdvpn.de',
+            inv_jing: 'https://invidious.jing.rocks'
+        };
+
         function extractYouTubeId(urlStr) {
             if (!urlStr) return null;
             const clean = urlStr.trim();
@@ -2025,25 +2055,142 @@
             return match ? match[1] : null;
         }
 
-        function buildYouTubeEmbedUrl(videoId) {
-            const isLoop = ytState.chkLoop ? 1 : 0;
-            const loopParams = isLoop ? `&loop=1&playlist=${videoId}` : '';
-            if (ytState.engine === 'invidious') {
-                // 使用開源無廣告 Invidious 嵌入線路
-                return `https://inv.tux.pizza/embed/${videoId}?autoplay=1&rel=0${loopParams}`;
+        function hideAllVideoPlayers() {
+            ytUI.empty.classList.add('hidden');
+            ytUI.apiContainer.classList.add('hidden');
+            ytUI.mirrorIframe.classList.add('hidden');
+            ytUI.localPlayer.classList.add('hidden');
+            ytUI.localPlayer.pause();
+            if (ytApiPlayer && typeof ytApiPlayer.pauseVideo === 'function') {
+                ytApiPlayer.pauseVideo();
             }
-            // 預設：官方 youtube-nocookie 教育無追蹤線路
-            return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3${loopParams}`;
+            ytUI.mirrorIframe.src = '';
         }
 
         function loadYouTubeVideo(videoId) {
             if (!videoId) return alert('無法識別此 YouTube 網址，請確認連結是否正確！');
             ytState.currentVideoId = videoId;
-            ytState.chkLoop = ytUI.chkLoop.checked;
-            ytUI.empty.classList.add('hidden');
-            ytUI.iframe.classList.remove('hidden');
-            ytUI.iframe.src = buildYouTubeEmbedUrl(videoId);
+            ytState.engine = ytUI.engineSelect.value;
+
+            const startSeconds = Math.max(0, parseInt(ytUI.startSec.value, 10) || 0);
+            const endSeconds = parseInt(ytUI.endSec.value, 10) || 0;
+            const isLoop = ytUI.chkLoop.checked;
+
+            hideAllVideoPlayers();
+
+            // 若選擇第三方開源無廣告鏡像線路
+            if (ytState.engine !== 'ytapi') {
+                const host = MIRROR_HOSTS[ytState.engine];
+                let embedUrl = `${host}/embed/${videoId}?autoplay=1&rel=0`;
+                if (startSeconds > 0) embedUrl += `&start=${startSeconds}&t=${startSeconds}`;
+                if (endSeconds > startSeconds) embedUrl += `&end=${endSeconds}`;
+                if (isLoop) embedUrl += `&loop=1`;
+
+                ytUI.mirrorIframe.classList.remove('hidden');
+                ytUI.mirrorIframe.src = embedUrl;
+                ytUI.statusText.innerHTML = `<i class="fa-solid fa-shield-halved text-emerald-600 mr-1"></i>正在使用開源無廣告鏡像 (${host}) 播放`;
+                ytUI.linkExternal.href = `${host}/watch?v=${videoId}`;
+                ytUI.linkExternal.classList.remove('hidden');
+                return;
+            }
+
+            // 預設：使用官方 YouTube IFrame API (支援程式控制跳過與區段循環)
+            ytUI.apiContainer.classList.remove('hidden');
+            ytUI.linkExternal.href = `https://inv.nadeko.net/watch?v=${videoId}`;
+            ytUI.linkExternal.classList.remove('hidden');
+            ytUI.statusText.innerHTML = `<i class="fa-brands fa-youtube text-red-600 mr-1"></i>官方 API 智慧模式（若遇片頭廣告可點擊上方「略過片頭 / 廣告快轉」）`;
+
+            const playerVars = {
+                autoplay: 1,
+                rel: 0,
+                modestbranding: 1,
+                iv_load_policy: 3,
+                start: startSeconds
+            };
+            if (endSeconds > startSeconds) playerVars.end = endSeconds;
+            if (isLoop) {
+                playerVars.loop = 1;
+                playerVars.playlist = videoId;
+            }
+
+            if (ytApiPlayer && typeof ytApiPlayer.loadVideoById === 'function') {
+                ytApiPlayer.loadVideoById({
+                    videoId: videoId,
+                    startSeconds: startSeconds,
+                    endSeconds: endSeconds > startSeconds ? endSeconds : undefined
+                });
+            } else if (isYtApiReady && window.YT && window.YT.Player) {
+                ytApiPlayer = new YT.Player('ytApiDiv', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: videoId,
+                    host: 'https://www.youtube-nocookie.com',
+                    playerVars: playerVars,
+                    events: {
+                        onStateChange: (event) => {
+                            // 若開啟循環且到達終點結束，自動重頭播放
+                            if (event.data === YT.PlayerState.ENDED && ytUI.chkLoop.checked) {
+                                const s = Math.max(0, parseInt(ytUI.startSec.value, 10) || 0);
+                                ytApiPlayer.seekTo(s, true);
+                                ytApiPlayer.playVideo();
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Fallback 若 API 腳本尚未載入完成
+                let fallbackUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&start=${startSeconds}`;
+                if (endSeconds > startSeconds) fallbackUrl += `&end=${endSeconds}`;
+                if (isLoop) fallbackUrl += `&loop=1&playlist=${videoId}`;
+                ytUI.apiContainer.classList.add('hidden');
+                ytUI.mirrorIframe.classList.remove('hidden');
+                ytUI.mirrorIframe.src = fallbackUrl;
+            }
         }
+
+        // 廣告快轉 / 略過片頭控制器
+        ytUI.btnSkipAd.addEventListener('click', () => {
+            if (!ytState.currentVideoId) return alert('請先載入一部 YouTube 影片！');
+
+            // 1. 嘗試透過 HTML5 video 標籤直接將廣告 16 倍速快轉並跳至結尾
+            try {
+                const videoEl = document.querySelector('video');
+                if (videoEl && !ytUI.localPlayer.classList.contains('hidden')) {
+                    videoEl.currentTime += 10;
+                    return;
+                }
+            } catch (e) {}
+
+            // 2. 透過 YouTube IFrame API 強制重新定位時間軸（能跳過部分嵌入式前導廣告或直接切入正片）
+            const targetStart = Math.max(2, parseInt(ytUI.startSec.value, 10) || 0);
+            if (ytApiPlayer && typeof ytApiPlayer.seekTo === 'function') {
+                const curr = ytApiPlayer.getCurrentTime ? ytApiPlayer.getCurrentTime() : 0;
+                const jumpTo = curr > 1 ? curr + 15 : targetStart;
+                ytApiPlayer.seekTo(jumpTo, true);
+                ytApiPlayer.playVideo();
+                ytUI.statusText.innerHTML = `<span class="text-amber-600 font-bold">⏩ 已執行時間軸強制推進 (${Math.round(jumpTo)}秒)！</span>`;
+            } else {
+                // 若在 Iframe 模式，設定起點為 3 秒後重新載入以避開 0 秒處的觸發點
+                if (parseInt(ytUI.startSec.value, 10) === 0) ytUI.startSec.value = 3;
+                loadYouTubeVideo(ytState.currentVideoId);
+            }
+        });
+
+        // 本地 MP4 影片檔播放 (100% 零廣告)
+        ytUI.btnLocal.addEventListener('click', () => ytUI.localInput.click());
+        ytUI.localInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            hideAllVideoPlayers();
+            const fileUrl = URL.createObjectURL(file);
+            ytUI.localPlayer.src = fileUrl;
+            ytUI.localPlayer.loop = ytUI.chkLoop.checked;
+            ytUI.localPlayer.classList.remove('hidden');
+            ytUI.localPlayer.play();
+            ytUI.linkExternal.classList.add('hidden');
+            ytUI.statusText.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i>正在播放本地影片：<strong>${file.name}</strong>（100% 零廣告離線模式）`;
+            e.target.value = '';
+        });
 
         ytUI.btnLoad.addEventListener('click', () => {
             const vid = extractYouTubeId(ytUI.input.value);
@@ -2054,29 +2201,24 @@
             if (e.key === 'Enter') ytUI.btnLoad.click();
         });
 
-        ytUI.chkLoop.addEventListener('change', () => {
+        ytUI.engineSelect.addEventListener('change', () => {
             if (ytState.currentVideoId) loadYouTubeVideo(ytState.currentVideoId);
         });
 
-        // 切換播放線路
-        document.querySelectorAll('.yt-engine-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                ytState.engine = btn.dataset.engine;
-                document.querySelectorAll('.yt-engine-btn').forEach(b => {
-                    b.className = "yt-engine-btn px-3 py-1 rounded-full font-bold bg-white text-gray-600 border hover:bg-gray-100 transition";
-                });
-                btn.className = "yt-engine-btn px-3 py-1 rounded-full font-bold bg-red-600 text-white shadow-sm transition";
-                if (ytState.currentVideoId) loadYouTubeVideo(ytState.currentVideoId);
-            });
+        ytUI.chkLoop.addEventListener('change', () => {
+            ytUI.localPlayer.loop = ytUI.chkLoop.checked;
+            if (ytState.currentVideoId && ytUI.localPlayer.classList.contains('hidden')) {
+                loadYouTubeVideo(ytState.currentVideoId);
+            }
         });
 
-        // 關燈專注模式 (Cinema Dimmer)
+        // 關燈專注模式
         ytUI.btnDim.addEventListener('click', () => {
             views.youtube.classList.toggle('cinema-dim-active');
             const isDim = views.youtube.classList.contains('cinema-dim-active');
             ytUI.btnDim.innerHTML = isDim 
-                ? '<i class="fa-solid fa-sun mr-1.5 text-yellow-300"></i> 開燈恢復' 
-                : '<i class="fa-solid fa-lightbulb mr-1.5"></i> 關燈專注模式';
+                ? '<i class="fa-solid fa-sun mr-1 text-yellow-300"></i> 開燈' 
+                : '<i class="fa-solid fa-lightbulb mr-1"></i> 關燈';
         });
 
         // 課堂播放清單管理
